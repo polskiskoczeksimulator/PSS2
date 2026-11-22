@@ -46059,9 +46059,12 @@ pub:function(ch,m){return fetch(TR.base+'/pub?ch='+encodeURIComponent(ch),{metho
 sub:function(ch,fn){var e=new EventSource(TR.base+'/sub?ch='+encodeURIComponent(ch));e.onmessage=function(x){try{fn(JSON.parse(x.data))}catch(_){}};TR.es.push(e);return e},
 rooms:function(){return fetch(TR.base+'/rooms').then(function(r){return r.json()})},
 put:function(r){return fetch(TR.base+'/rooms',{method:'POST',body:JSON.stringify(r)}).catch(function(){})}};
+var vis={priv:false,pw:''},hostPw='',pendingJoin=null;
+function hashPw(id,pw){var s=id+':'+pw;try{if(window.crypto&&crypto.subtle&&window.TextEncoder){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return('0'+x.toString(16)).slice(-2)}).join('')})}}catch(e){}
+var h1=0xdeadbeef,h2=0x41c6ce57;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return Promise.resolve('f'+(h2>>>0).toString(16)+(h1>>>0).toString(16))}
 var myId='p'+Math.random().toString(36).slice(2,9),rules={max:4,ovr:'',type:'',start:'',rolled:false},typeFour=[];
 function ruleText(r){var o=ovrOpts().filter(function(x){return x.v===r.ovr})[0],t=typeOpts().filter(function(x){return x.id===r.type})[0],s=startOpts().filter(function(x){return x.v===r.start})[0];return'OVR: '+(o?o.t:r.ovr)+' · Typ: '+(t?t.name:r.type)+' · Start: '+(s?s.t:r.start)}
-function sOnline(){var u=localStorage.getItem('pssCoopRelay')||'';u=prompt('Adres serwera pośredniczącego (uruchom relay-server.js), np. http://192.168.0.10:8787',u||'http://localhost:8787');if(!u){return sType()}
+function sOnline(){var u=prompt('Wpisz następujący adres serwera: https://pss2.onrender.com','https://pss2.onrender.com');if(!u){return sType()}
 TR.base=u.replace(/\/+$/,'');localStorage.setItem('pssCoopRelay',TR.base);
 flat('GRAM ONLINE','',[['mk','UTWÓRZ POKÓJ'],['jn','DOŁĄCZ DO POKOJU']],'typeback')}
 function sRules(){var ov=ovrOpts(),ty=typeOpts(),so=startOpts();if(!typeFour.length)typeFour=pick4().map(tById).filter(Boolean);
@@ -46070,25 +46073,43 @@ var h='<h1>ZASADY ROZGRYWKI</h1><div class="cp-pl" style="border-color:#18263a;m
 h+='<label>Pułap OVR graczy (lub wszyscy synami reprezentanta)</label>'+cards('rOvr',ov.map(function(o){return{v:o.v,h:ovrCard(o)}}),rules.ovr||ov[0].v,'',rules.rolled);
 h+='<label>Typ zawodnika (ten sam dla wszystkich – jeden z czterech)</label>'+cards('rTyp',typeFour.map(function(t){return{v:t.id,h:typeCard(t)}}),rules.type||typeFour[0].id,'',rules.rolled);
 h+='<label>Rozgrywki, w których zaczynają karierę</label><select id="rSt"'+lk+'>'+so.map(function(o){return '<option value="'+o.v+'"'+(o.v===rules.start?' selected':'')+'>'+esc(o.t)+'</option>'}).join('')+'</select>';
+h+='<label>Widoczność pokoju</label><select id="rVis"><option value="pub"'+(vis.priv?'':' selected')+'>Publiczny — dostępny dla każdego</option><option value="priv"'+(vis.priv?' selected':'')+'>Prywatny — wymaga hasła</option></select>';
+h+='<div id="rPwBox" style="display:'+(vis.priv?'block':'none')+'"><label>Hasło do pokoju (minimum 5 znaków)</label><input id="rPw" type="password" autocomplete="off" maxlength="40" value="'+esc(vis.pw)+'" placeholder="Wpisz hasło"><label style="display:flex;align-items:center;gap:8px;font-weight:700"><input id="rPwShow" type="checkbox" style="width:auto;padding:0"> Pokaż hasło</label><div id="rPwErr" style="color:#b3261e;font-weight:800;font-size:.85rem;min-height:1.2em"></div></div>';
 h+='<div class="cp-btns" style="margin-top:16px"><button class="cp-b sm" data-a="roll"'+lk+'>🎲 LOSUJ ZASADY (jednorazowo)</button><button class="cp-b" data-a="mkgo">UTWÓRZ POKÓJ</button></div></div>';show(h);back();
 function rd(){rules.max=+$('rMax').value;rules.ovr=(root.querySelector('input[name=rOvr]:checked')||{}).value||'';rules.type=(root.querySelector('input[name=rTyp]:checked')||{}).value||'';rules.start=$('rSt').value}
-root.querySelectorAll('#rMax,#rSt,input[name=rOvr],input[name=rTyp]').forEach(function(e){e.onchange=rd});rd()}
+root.querySelectorAll('#rMax,#rSt,input[name=rOvr],input[name=rTyp]').forEach(function(e){e.onchange=rd});rd();
+$('rVis').onchange=function(){vis.priv=this.value==='priv';$('rPwBox').style.display=vis.priv?'block':'none';if(vis.priv)$('rPw').focus()};
+$('rPw').oninput=function(){vis.pw=this.value;$('rPwErr').textContent=''};
+$('rPwShow').onchange=function(){$('rPw').type=this.checked?'text':'password'}}
+function pwOk(){if(!vis.priv)return true;if((vis.pw||'').length<5){var e=$('rPwErr');if(e)e.textContent='Hasło musi mieć co najmniej 5 znaków.';var i=$('rPw');if(i)i.focus();return false}return true}
 function doRoll(){if(rules.rolled)return;rules.rolled=true;rules.max=2+Math.floor(Math.random()*7);rules.ovr=pk(ovrOpts()).v;rules.type=pk(typeFour).id;rules.start=pk(startOpts()).v;sRules()}
 function sJoinList(){show('<h1>DOSTĘPNE POKOJE</h1><div id="cpRooms">Szukam pokoi…</div>');back();pollRooms();O={poll:setInterval(pollRooms,2000)}}
 function pollRooms(){TR.rooms().then(function(a){var el=$('cpRooms');if(!el)return;a=a.filter(function(r){return!r.started});
-el.innerHTML=a.length?'<table class="cp-tab"><tr><th>Pokój</th><th>Gracze</th><th>Reguły</th><th></th></tr>'+a.map(function(r){var full=r.players.length>=r.max;return '<tr><td>#'+esc(r.id)+'<br><small>'+esc(r.players[0].name||'host')+'</small></td><td>'+r.players.length+' / '+r.max+'</td><td>'+esc(ruleText(r.rules))+'</td><td><button class="cp-b sm pri" data-a="joinroom" data-r="'+esc(r.id)+'"'+(full?' disabled':'')+'>'+(full?'PEŁNY':'DOŁĄCZ')+'</button></td></tr>'}).join('')+'</table>':'Brak dostępnych pokoi. Poproś kogoś o utworzenie pokoju.'}).catch(function(){var el=$('cpRooms');if(el)el.textContent='Brak połączenia z serwerem pośredniczącym.'})}
+el.innerHTML=a.length?'<table class="cp-tab"><tr><th>Pokój</th><th>Gracze</th><th>Reguły</th><th></th></tr>'+a.map(function(r){var full=r.players.length>=r.max;return '<tr><td>#'+esc(r.id)+(r.priv?' 🔒':'')+'<br><small>'+(r.priv?'prywatny · ':'publiczny · ')+esc(r.players[0].name||'host')+'</small></td><td>'+r.players.length+' / '+r.max+'</td><td>'+esc(ruleText(r.rules))+'</td><td><button class="cp-b sm pri" data-a="joinroom" data-r="'+esc(r.id)+'"'+(full?' disabled':'')+'>'+(full?'PEŁNY':'DOŁĄCZ')+'</button></td></tr>'}).join('')+'</table>':'Brak dostępnych pokoi. Poproś kogoś o utworzenie pokoju.'}).catch(function(){var el=$('cpRooms');if(el)el.textContent='Brak połączenia z serwerem pośredniczącym.'})}
 var room=null,my=null,host=false,hb=null;
 function lockInfo(r){var o=ovrOpts().filter(function(x){return x.v===r.rules.ovr})[0],t=typeOpts().filter(function(x){return x.id===r.rules.type})[0];return{ovr:r.rules.ovr,type:r.rules.type,text:(o?o.t:'')+' · '+(t?t.name:''),title:'Twoja postać'}}
 function connect(){TR.sub('room:'+room.id,function(m){
-if(m.t==='room'&&!host){room=m.room;if(my&&my.ready)sWait()}
+if(host&&m.t==='join'&&room.priv&&m.pwh!==hostPw){TR.pub('room:'+room.id,{t:'deny',id:m.p.id});return}
+if(m.t==='deny'&&pendingJoin&&m.id===myId){var pj=pendingJoin;pendingJoin=null;try{pj.es.close()}catch(_){}room=null;host=false;sJoinPw(pj.id,'Nieprawidłowe hasło. Spróbuj ponownie.');return}
+if(m.t==='room'&&!host){room=m.room;if(pendingJoin&&room.players.some(function(p){return p.id===myId})){pendingJoin=null;sMy();return}if(my&&my.ready)sWait()}
 if(host&&m.t==='join'&&room.players.length<room.max&&!room.players.some(function(p){return p.id===m.p.id})){room.players.push(m.p);TR.pub('room:'+room.id,{t:'room',room:room});TR.put(room);if(my&&my.ready)sWait()}
 if(host&&m.t==='ready'){var p=room.players.filter(function(x){return x.id===m.id})[0];if(p){p.ready=true;p.name=m.name;TR.pub('room:'+room.id,{t:'room',room:room});TR.put(room);if(my&&my.ready)sWait()}}
 if(m.t==='start'){room=m.room;startOnline()}
 if(m.t==='done'&&OS){OS.rep[m.id]={round:m.round,score:m.score,ach:m.ach,fin:m.fin};var pl=OS.room.players.filter(function(x){return x.id===m.id})[0];if(pl){pl.score=m.score;pl.ach=m.ach;pl.fin=m.fin}checkBarrier()}
 if(m.t==='end'){finishOnline()}})}
-function mkRoom(){host=true;room={id:Math.random().toString(36).slice(2,6).toUpperCase(),max:rules.max,rules:JSON.parse(JSON.stringify(rules)),players:[{id:myId,name:'',ready:false}],started:false};
-connect();TR.put(room);hb=setInterval(function(){if(room&&!room.started)TR.put(room)},3000);sMy()}
-function joinRoom(id){TR.rooms().then(function(a){room=a.filter(function(r){return r.id===id})[0];if(!room)return sJoinList();clearInterval(O&&O.poll);host=false;connect();setTimeout(function(){TR.pub('room:'+id,{t:'join',p:{id:myId,name:'',ready:false}})},400);sMy()})}
+function mkRoom(){if(!pwOk())return;var id=Math.random().toString(36).slice(2,6).toUpperCase();
+(vis.priv?hashPw(id,vis.pw):Promise.resolve('')).then(function(h){host=true;hostPw=h;room={id:id,max:rules.max,rules:JSON.parse(JSON.stringify(rules)),priv:!!vis.priv,players:[{id:myId,name:'',ready:false}],started:false};
+connect();TR.put(room);hb=setInterval(function(){if(room&&!room.started)TR.put(room)},3000);sMy()})}
+function joinRoom(id){TR.rooms().then(function(a){var r=a.filter(function(x){return x.id===id})[0];if(!r)return sJoinList();clearInterval(O&&O.poll);
+if(r.priv)return sJoinPw(id,'');
+room=r;host=false;connect();setTimeout(function(){TR.pub('room:'+id,{t:'join',p:{id:myId,name:'',ready:false}})},400);sMy()})}
+function sJoinPw(id,err){clearInterval(O&&O.poll);show('<h1>POKÓJ PRYWATNY #'+esc(id)+'</h1><div class="cp-pl" style="border-color:#18263a;max-width:420px;margin:0 auto"><label>Wpisz hasło do pokoju</label><input id="jPw" type="password" autocomplete="off" maxlength="40" placeholder="Hasło"><div id="jErr" style="color:#b3261e;font-weight:800;font-size:.85rem;min-height:1.2em">'+esc(err||'')+'</div><div class="cp-btns" style="margin-top:12px"><button class="cp-b sm" data-a="jn">WRÓĆ DO LISTY</button><button class="cp-b" id="jGo" data-a="joinpw" data-r="'+esc(id)+'">DOŁĄCZ</button></div></div>');back();
+var i=$('jPw');i.focus();i.onkeydown=function(e){if(e.key==='Enter')$('jGo').click()}}
+function doJoinPw(id){var pw=($('jPw')||{}).value||'';if(pw.length<5){$('jErr').textContent='Hasło ma co najmniej 5 znaków.';return}
+$('jErr').textContent='Sprawdzam hasło…';TR.rooms().then(function(a){var r=a.filter(function(x){return x.id===id})[0];if(!r)return sJoinList();
+hashPw(id,pw).then(function(h){room=r;host=false;pendingJoin={id:id,es:null};connect();pendingJoin.es=TR.es[TR.es.length-1];
+setTimeout(function(){TR.pub('room:'+id,{t:'join',pwh:h,p:{id:myId,name:'',ready:false}})},400);
+setTimeout(function(){if(pendingJoin&&pendingJoin.id===id){var pj=pendingJoin;pendingJoin=null;try{pj.es.close()}catch(_){}room=null;sJoinPw(id,'Brak odpowiedzi gospodarza. Spróbuj ponownie.')}},8000)})}).catch(function(){var e=$('jErr');if(e)e.textContent='Brak połączenia z serwerem.'})}
 function myIdx(){for(var i=0;i<room.players.length;i++)if(room.players[i].id===myId)return i;return 0}
 function sMy(){my=my||{cfg:newCfg(),ready:false};var i=Math.min(myIdx(),7);var h='<h1>TWORZENIE POSTACI — POKÓJ #'+room.id+'</h1><div class="cp-grid" style="grid-template-columns:1fr;max-width:600px;margin:0 auto">'+panel(i,my.cfg,COL[i],lockInfo(room))+'</div><div class="cp-bot"><button class="cp-b" id="cpRdy" data-a="ready" disabled>GOTOWY</button></div>';show(h);back();chkMy()}
 function chkMy(){var b=$('cpRdy');if(b)b.disabled=!valid(my.cfg,lockInfo(room))}
@@ -46133,9 +46154,9 @@ else if(a==='table'){if(s&&s.mode==='hot')table(s.players,null,false);else if(OS
 else if(a==='close'){hide();if(OS&&OS.wait)showWait()}
 else if(a==='endgame'){if(confirm('Zakończyć rozgrywkę CO-OP i pokazać klasyfikację końcową?')){if(OS){TR.pub('room:'+room.id,{t:'end'});finishOnline()}else if(s)finish(s)}}
 else if(a==='exit')exitCoop();
-else if(a==='mk'){rules={max:4,ovr:'',type:'',start:'',rolled:false};typeFour=[];sRules()}
+else if(a==='mk'){rules={max:4,ovr:'',type:'',start:'',rolled:false};typeFour=[];vis={priv:false,pw:''};sRules()}
 else if(a==='roll')doRoll();else if(a==='mkgo')mkRoom();
-else if(a==='jn')sJoinList();else if(a==='joinroom')joinRoom(b.dataset.r);
+else if(a==='jn')sJoinList();else if(a==='joinroom')joinRoom(b.dataset.r);else if(a==='joinpw')doJoinPw(b.dataset.r);
 else if(a==='ready'){my.ready=true;var p=room.players[myIdx()];p.name=my.cfg.name.trim()||'Syn reprezentanta';p.ready=true;TR.pub('room:'+room.id,{t:'ready',id:myId,name:p.name});sWait()}
 else if(a==='startroom'){room.started=true;TR.pub('room:'+room.id,{t:'start',room:room});TR.put(room)}
 },true);
