@@ -10784,7 +10784,16 @@ simulateDuetEvent=function(player,label,season,majorKind='wc',course){
         res.type='duet';res.majorKind='wc';res.level='WC';res.event=player.simulationCursor+1;res.seriesEvent=player.simulationCursor+1;
         player.careerResults.push(res);player.seasonResults.push(res);updateMajorCareerStats(player,res);batch.push(res);
       }else{
-        const seriesEvent=Number(player.seriesEventCounters[level]||0)+1;
+        let seriesEvent=Number(player.seriesEventCounters[level]||0)+1;
+        /* FIX: po awansie w trakcie sezonu licznik nowej rangi startował od 0, więc prawdziwy start gracza
+           nadpisywał w archiwum inny konkurs, a właściwy konkurs dostawał gracza z ponownie wylosowanym wynikiem
+           (np. 46. zamiast 20. miejsca). Numer konkursu bierzemy teraz z daty we wspólnym kalendarzu rangi. */
+        try{
+          const __d=e&&e.date?String(e.date).slice(0,10):'';
+          if(__d&&typeof spectatorEventDate==='function'){
+            for(let __i=0;__i<120;__i++){const __sd=spectatorEventDate(player,level,__i);if(!__sd)break;if(String(__sd).slice(0,10)===__d){seriesEvent=__i+1;break}}
+          }
+        }catch(__e){}
         res=simulateCompetition(player,level,player.simulationCursor);
         res.type='regular';res.level=level;res.event=player.simulationCursor+1;res.seriesEvent=seriesEvent;
         player.seriesEventCounters[level]=seriesEvent;
@@ -51784,6 +51793,58 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    new MutationObserver(observe).observe(feed,{childList:true});observe();
  }
  apply();
+})();
+</script>
+<style id="pss-perf-css">
+/* Wydajność: śnieg w tle (identyczny wygląd, ta sama prędkość) animowany transformem (GPU)
+   zamiast background-position (przemalowanie pełnego ekranu w każdej klatce). */
+.game-screen::before,.career-screen::before,.calendar-screen::before,.shop-screen::before,
+.results-screen::before,.sponsor-screen::before,.start-competition-screen::before,#pssCalPlan::before{
+  background-image:none!important;animation:none!important;
+}
+.pss-snowfx{position:fixed;left:0;right:0;bottom:0;pointer-events:none;z-index:-1;margin:0;padding:0;border:0}
+.pss-snowfx>i{position:fixed;left:0;right:0;bottom:0;pointer-events:none;display:block;will-change:transform;animation:18s linear infinite}
+.pss-snowfx>i.a{top:-540px;animation-name:pssSnowA;
+  background:radial-gradient(circle,#fff 0 3.4px,rgba(140,195,232,.5) 4.6px,transparent 7.5px) 10px 20px/270px 270px}
+.pss-snowfx>i.b{top:-570px;animation-name:pssSnowB;
+  background:radial-gradient(circle,#fff 0 2.4px,rgba(140,195,232,.55) 3.4px,transparent 5.5px) 55px 75px/190px 190px}
+.pss-snowfx>i.c{top:-360px;animation-name:pssSnowC;
+  background:radial-gradient(circle,#fff 0 1.6px,rgba(140,195,232,.6) 2.4px,transparent 4px) 10px 20px/120px 120px}
+@keyframes pssSnowA{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,330px,0)}}
+@keyframes pssSnowB{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,510px,0)}}
+@keyframes pssSnowC{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,330px,0)}}
+/* Duże panele stron mają tło kryjące w 88–95%, więc rozmycie tego, co za nimi, dawało
+   niewidoczną różnicę, a kosztowało przeliczanie blura w każdej klatce animacji śniegu. */
+.creator-card,.career-panel,.start-competition-panel,.sponsor-panel,.calendar-panel,
+.shop-panel,.results-panel,#pssCalPlan .cp-panel{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+</style>
+<script id="pss-perf-js">
+(function(){
+  var SEL='.game-screen,.career-screen,.calendar-screen,.shop-screen,.results-screen,.sponsor-screen,.start-competition-screen,#pssCalPlan';
+  function mk(){var w=document.createElement('div');w.className='pss-snowfx';w.setAttribute('aria-hidden','true');
+    w.innerHTML='<i class="a"></i><i class="b"></i><i class="c"></i>';return w}
+  function ensure(el){
+    if(!el||el.nodeType!==1)return;
+    var f=el.firstElementChild;
+    if(f&&f.classList&&f.classList.contains('pss-snowfx'))return;
+    el.insertBefore(mk(),el.firstChild);
+  }
+  function scan(){var l=document.querySelectorAll(SEL);for(var i=0;i<l.length;i++)ensure(l[i])}
+  function watch(el){
+    if(el.__pssSnowWatch)return;el.__pssSnowWatch=1;
+    new MutationObserver(function(){ensure(el)}).observe(el,{childList:true});
+  }
+  function init(){
+    scan();
+    var l=document.querySelectorAll(SEL);for(var i=0;i<l.length;i++)watch(l[i]);
+    new MutationObserver(function(m){
+      for(var i=0;i<m.length;i++)for(var j=0;j<m[i].addedNodes.length;j++){
+        var n=m[i].addedNodes[j];
+        if(n.nodeType===1&&n.matches&&n.matches(SEL)){ensure(n);watch(n)}
+      }
+    }).observe(document.body,{childList:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
 </body>
