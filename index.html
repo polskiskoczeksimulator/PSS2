@@ -51879,5 +51879,40 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+<script id="pss-event-loop-guard">
+/* FIX: "loop eventów" – wiele modułów (golf, szachy, śnieżki, dart, F1 itd.) dopisuje bieżący konkurs z powrotem do player.eventTargets
+   po rozwiązaniu decyzji, więc na jednym konkursie mogła wyskakiwać nieskończona liczba decyzji i symulacja stała w miejscu.
+   Zabezpieczenie: na jednym konkursie (sezon|faza|numer) pokazujemy maksymalnie 3 decyzje; kolejne są pomijane,
+   cel decyzji zdejmowany z listy, a symulacja rusza dalej. */
+(function(){
+  'use strict';
+  if(window.__PSS_EVLOOP_GUARD)return; window.__PSS_EVLOOP_GUARD=1;
+  var MAX_PER_CURSOR=3;
+  function cursorOf(p){return p.seasonPhase==='summer'?Number(p.summerCursor||0):Number(p.simulationCursor||0);}
+  function keyOf(p){return Number(p.season||1)+'|'+(p.seasonPhase==='summer'?'s':'w')+'|'+cursorOf(p);}
+  var bp=window.pickSeasonEvent;
+  if(typeof bp!=='function'||bp.__loopGuard)return;
+  var w=function(player){
+    var st=null;
+    try{
+      if(player&&typeof player==='object'){
+        var k=keyOf(player);
+        st=(player.pssEvLoop&&player.pssEvLoop.k===k)?player.pssEvLoop:(player.pssEvLoop={k:k,n:0});
+        if(st.n>=MAX_PER_CURSOR){
+          var cur=cursorOf(player);
+          player.eventTargets=(player.eventTargets||[]).filter(function(x){return Number(x)!==cur;});
+          player.pendingEvent=null; player.pendingEventId=null;
+          try{console.warn('PSS: przerwano pętlę decyzji na konkursie',k);}catch(e){}
+          return null;
+        }
+      }
+    }catch(e){st=null;}
+    var ev=bp.apply(this,arguments);
+    try{if(ev&&st)st.n++;}catch(e){}
+    return ev;
+  };
+  w.__loopGuard=1; window.pickSeasonEvent=w;
+})();
+</script>
 </body>
 </html>
