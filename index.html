@@ -15546,6 +15546,14 @@ window.PSS_competitionRanks=competitionRanks;
     PSS_slimAllRows(player.spectatorResults);
     PSS_slimAllRows(player.summerResults);
 
+    /* FIX: wyniki letnie ze starszych sezonów (przed poprzednim) były trzymane w pełnej postaci (>1,5 MB) i rosły z sezonu na sezon.
+       Kompresujemy je tak samo jak careerResults. */
+    if(Array.isArray(player.summerResults)){
+      player.summerResults=player.summerResults.map(r=>
+        (!r || Number(r.season)>=current-1 || r.archived===true || r.type==='polishChampionship' || r.pssKeepJumpDetails===true) ? r : FINAL_compactResult(r)
+      );
+    }
+
     if(Array.isArray(player.careerResults)){
       player.careerResults=player.careerResults.map(r=>
         (Number(r.season)>=(aggressive?current:current-1) || (r.archived===true&&r.playerSnapshot!==undefined&&!r.rows&&!r.allRows&&!r.teams)) ? r : FINAL_compactResult(r)
@@ -15569,7 +15577,14 @@ window.PSS_competitionRanks=competitionRanks;
     PSS_pruneSeasonObject(player.levelHistory,current,2);
     PSS_pruneSeasonObject(player.generatedSeasonNpcs,current,2);
     PSS_pruneSeasonObject(player.summerCalendars,current,2);
-    PSS_pruneSeasonObject(player._top4FieldCache,current,0);
+    /* FIX: klucze cache mają postać 'wk|sezon|weekend|poziom', więc PSS_pruneSeasonObject (szuka numeru sezonu na początku)
+       nigdy ich nie usuwał i cache rósł z sezonu na sezon. Usuwamy wpisy z minionych sezonów. */
+    if(player._top4FieldCache && typeof player._top4FieldCache==='object' && !Array.isArray(player._top4FieldCache)){
+      Object.keys(player._top4FieldCache).forEach(k=>{
+        const m=String(k).match(/^wk\|(\d+)\|/);
+        if(m && Number(m[1])<current)delete player._top4FieldCache[k];
+      });
+    }
 
     return player;
   };
@@ -48171,6 +48186,23 @@ label{font-weight:700;}
   .pss-rail .career-tools{gap:5px!important;}
 }
 .cp-modefield{margin-top:14px;}
+
+/* FIX mobilny kreatora: późniejsza reguła height:min(850px,...) nadpisywała height:auto z media query,
+   przez co zawartość kroku wylewała się na przyciski WSTECZ / DALEJ. Na wąskich ekranach karta rośnie z zawartością. */
+@media (max-width:980px){
+  .creator-card{height:auto!important;min-height:0!important;}
+  #characterForm{flex:none;}
+  .cc-grid{flex:none!important;min-height:0;overflow:visible!important;padding:4px 0 6px;}
+  .pss-wiz-nav{position:relative;z-index:1;margin-top:16px;clear:both;}
+  .cp-modefield .ovr-card{min-height:0;padding:14px 16px;}
+  .cp-modefield .ovr-card strong{font-size:1.5rem;margin-bottom:4px;}
+}
+@media (max-width:560px){
+  .pss-wiz-nav{gap:10px;}
+  .pss-wiz-btn{padding:11px 18px;font-size:1.05rem;letter-spacing:.05em;}
+  .pss-wiz-nav .actions{flex:1 1 100%;margin:0;justify-content:center;}
+  .pss-wiz-nav .actions .create-btn{width:100%;}
+}
 
 /* ==========================================================
    v4 — przeprojektowany ekran kariery
