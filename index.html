@@ -51496,6 +51496,7 @@ function cardList(){
   });
   return out;
 }
+function xpNow(){try{return Math.max(0,Math.floor(Number(window.PSS_XP&&window.PSS_XP.get&&window.PSS_XP.get())||0))}catch(e){return 0}}
 function totals(){
   var lt=parseLt(lsGet(LTK)),w=0,med={},ach={},ids=Object.keys(lt.c);
   ids.forEach(function(cid){
@@ -51505,22 +51506,29 @@ function totals(){
   });
   var g=0,s=0,b=0;Object.keys(med).forEach(function(k){g+=med[k][0];s+=med[k][1];b+=med[k][2]});
   var cl=cardList();
-  return {wc:Math.round(w),g:g,s:s,b:b,ms:g*1e8+Math.min(s,9999)*1e4+Math.min(b,9999),ach:Object.keys(ach).length,cardList:cl,cards:cl.length,careers:ids.length};
+  return {wc:Math.round(w),g:g,s:s,b:b,ms:g*1e8+Math.min(s,9999)*1e4+Math.min(b,9999),ach:Object.keys(ach).length,cardList:cl,cards:cl.length,careers:ids.length,xp:xpNow()};
 }
 
 /* ---------- publikowanie profilu gracza ---------- */
-var pubSig='',pubBusy=false,pubNext=0,pubErr=null;
+var pubSig='',pubSigBase='',pubXpNext=0,pubXpRejected=false,pubBusy=false,pubNext=0,pubErr=null;
 function publishNow(){
   var C=cloud();if(!C||pubBusy||Date.now()<pubNext)return;
   var S=C.session();if(!S||!S.username)return;
-  var t=totals(),sig=S.uid+'|'+JSON.stringify([t.cards,t.cardList,t.ach,t.wc,t.g,t.s,t.b,S.username]);
+  var t=totals(),base=S.uid+'|'+JSON.stringify([t.cards,t.cardList,t.ach,t.wc,t.g,t.s,t.b,S.username]),sig=base+'|'+t.xp;
   if(sig===pubSig)return;
+  /* samo XP zmienia się często – wysyłamy je najwyżej raz na minutę */
+  if(base===pubSigBase&&Date.now()<pubXpNext)return;
   pubBusy=true;
   C.getToken().then(function(tok){
     var f={nick:C.str(S.username),cards:C.int(t.cards),cardList:{arrayValue:{values:t.cardList.map(function(x){return C.str(x)})}},
-      ach:C.int(t.ach),wc:C.int(t.wc),g:C.int(t.g),s:C.int(t.s),b:C.int(t.b),ms:C.int(t.ms),upd:C.int(Date.now())};
-    return C.api(C.FS+'/profiles/'+S.uid,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({fields:f})});
-  }).then(function(){pubSig=sig;pubErr=null;cache=null;rkCache={}}).catch(function(e){pubErr=e&&e.status===403?'rules':'net';pubNext=Date.now()+60000}).then(function(){pubBusy=false});
+      ach:C.int(t.ach),wc:C.int(t.wc),g:C.int(t.g),s:C.int(t.s),b:C.int(t.b),ms:C.int(t.ms),xp:C.int(t.xp),upd:C.int(Date.now())};
+    var send=function(fl){return C.api(C.FS+'/profiles/'+S.uid,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({fields:fl})})};
+    return send(f).then(function(){pubXpRejected=false}).catch(function(e){
+      /* reguły Firestore mogą jeszcze nie znać pola xp – wtedy publikujemy resztę profilu bez niego */
+      if(e&&e.status===403){var g={};Object.keys(f).forEach(function(k){if(k!=='xp')g[k]=f[k]});return send(g).then(function(){pubXpRejected=true})}
+      throw e;
+    });
+  }).then(function(){pubSig=sig;pubSigBase=base;pubXpNext=Date.now()+60000;pubErr=null;cache=null;rkCache={}}).catch(function(e){pubErr=e&&e.status===403?'rules':'net';pubNext=Date.now()+60000}).then(function(){pubBusy=false});
 }
 
 /* ---------- procent graczy z daną kartą ---------- */
@@ -51561,7 +51569,7 @@ window.__pssCardStats={
 };
 
 /* ---------- ranking: dane z serwera ---------- */
-var FIELD={cards:'cards',ach:'ach',wc:'wc',med:'ms'};
+var FIELD={cards:'cards',ach:'ach',wc:'wc',med:'ms',xp:'xp'};
 var rkCache={};
 function intOf(f,k){return f&&f[k]&&f[k].integerValue!=null?Number(f[k].integerValue)||0:0}
 function fetchTop(tab){
@@ -51575,7 +51583,7 @@ function fetchTop(tab){
     return C.post(C.FS+':runQuery',q,tok).then(function(res){
       var rows=res.filter(function(x){return x.document}).map(function(x){
         var d=x.document,f=d.fields||{};
-        return {uid:d.name.split('/').pop(),nick:(f.nick&&f.nick.stringValue)||'—',cards:intOf(f,'cards'),ach:intOf(f,'ach'),wc:intOf(f,'wc'),g:intOf(f,'g'),s:intOf(f,'s'),b:intOf(f,'b'),ms:intOf(f,'ms')};
+        return {uid:d.name.split('/').pop(),nick:(f.nick&&f.nick.stringValue)||'—',cards:intOf(f,'cards'),ach:intOf(f,'ach'),wc:intOf(f,'wc'),g:intOf(f,'g'),s:intOf(f,'s'),b:intOf(f,'b'),ms:intOf(f,'ms'),xp:intOf(f,'xp')};
       });
       var t=totals(),own=C.session(),mine=null,val=t[tab==='med'?'ms':tab];
       rows.forEach(function(r){if(own&&r.uid===own.uid)mine=r});
@@ -51583,7 +51591,7 @@ function fetchTop(tab){
       if(mine||!own||!(val>0)||rows.length<100)return done();
       /* gracz poza pierwszą setką: liczymy jego miejsce */
       return aggCount(C,{fieldFilter:{field:{fieldPath:field},op:'GREATER_THAN',value:{integerValue:String(val)}}},tok)
-        .then(function(n){return done({rank:n+1,nick:own.username||'Ty',cards:t.cards,ach:t.ach,wc:t.wc,g:t.g,s:t.s,b:t.b,ms:t.ms,uid:own.uid})})
+        .then(function(n){return done({rank:n+1,nick:own.username||'Ty',cards:t.cards,ach:t.ach,wc:t.wc,g:t.g,s:t.s,b:t.b,ms:t.ms,xp:t.xp,uid:own.uid})})
         .catch(function(){return done()});
     });
   });
@@ -51594,7 +51602,8 @@ var TABS=[
   {id:'cards',label:'ZEBRANE KARTY'},
   {id:'ach',label:'ODBLOKOWANE OSIĄGNIĘCIA'},
   {id:'wc',label:'PUNKTY PUCHARU ŚWIATA'},
-  {id:'med',label:'MEDALE'}
+  {id:'med',label:'MEDALE'},
+  {id:'xp',label:'ZDOBYTE XP'}
 ];
 var css=document.createElement('style');
 css.textContent=
@@ -51636,7 +51645,7 @@ function ensureRoot(){
     '<div class="pssrk-me" id="pssrkMe"></div>'+
     '<div class="pssrk-tabs" id="pssrkTabs" role="tablist"></div>'+
     '<div class="pssrk-body" id="pssrkBody"></div>'+
-    '<p class="pssrk-note">Ranking sumuje dokonania ze wszystkich karier gracza – zakończonych i porzuconych (NOWA KARIERA). Każde osiągnięcie liczy się tylko raz. W medalach liczą się miejsca 1–3 w: igrzyskach olimpijskich, mistrzostwach świata, mistrzostwach świata w lotach, Pucharze Świata, Turnieju Czterech Skoczni, Pucharze Świata w lotach i mistrzostwach kraju.</p>'+
+    '<p class="pssrk-note">Ranking sumuje dokonania ze wszystkich karier gracza – zakończonych i porzuconych (NOWA KARIERA). Każde osiągnięcie liczy się tylko raz, a XP jest wspólne dla wszystkich karier. W medalach liczą się miejsca 1–3 w: igrzyskach olimpijskich, mistrzostwach świata, mistrzostwach świata w lotach, Pucharze Świata, Turnieju Czterech Skoczni, Pucharze Świata w lotach i mistrzostwach kraju.</p>'+
   '</div>';
   document.body.appendChild(root);
   root.addEventListener('mousedown',function(e){if(e.target===root)closeRank()});
@@ -51652,7 +51661,7 @@ function closeRank(){if(root)root.classList.remove('show')}
 function renderMe(){
   var t=totals(),C=window.__pssCloud,S=C&&C.session&&C.session();
   var N=(window.GAME_ACHIEVEMENTS&&window.GAME_ACHIEVEMENTS.length)||'?';
-  root.querySelector('#pssrkMe').innerHTML='<b>Twój dorobek ze wszystkich karier:</b> karty <b>'+t.cards+'/'+TOTAL_CARDS+'</b> · osiągnięcia <b>'+t.ach+'/'+N+'</b> · punkty PŚ <b>'+fmt(t.wc)+'</b> · medale 🥇 <b>'+t.g+'</b> 🥈 <b>'+t.s+'</b> 🥉 <b>'+t.b+'</b>'+
+  root.querySelector('#pssrkMe').innerHTML='<b>Twój dorobek ze wszystkich karier:</b> karty <b>'+t.cards+'/'+TOTAL_CARDS+'</b> · osiągnięcia <b>'+t.ach+'/'+N+'</b> · punkty PŚ <b>'+fmt(t.wc)+'</b> · XP <b>'+fmt(t.xp)+'</b> · medale 🥇 <b>'+t.g+'</b> 🥈 <b>'+t.s+'</b> 🥉 <b>'+t.b+'</b>'+
     (S?'':'<br>Zaloguj się na konto, aby Twój wynik pojawił się w rankingu.');
 }
 function setTab(id){
@@ -51675,17 +51684,18 @@ function drawErr(e){
 function drawTable(tab,v){
   var C=window.__pssCloud,S=C&&C.session&&C.session(),body=root.querySelector('#pssrkBody');
   var rows=v.rows;
-  if(!rows.length){body.innerHTML='<div class="pssrk-msg">Nikt nie pojawił się jeszcze w tym rankingu. Zdobądź pierwszy wynik!</div>';return}
+  if(!rows.length){body.innerHTML='<div class="pssrk-msg">'+(tab==='xp'&&pubXpRejected?'Ranking XP zacznie działać po dodaniu nowych reguł Firestore (pole „xp” w kolekcji „profiles”).':'Nikt nie pojawił się jeszcze w tym rankingu. Zdobądź pierwszy wynik!')+'</div>';return}
   var N=(window.GAME_ACHIEVEMENTS&&window.GAME_ACHIEVEMENTS.length)||'?';
   var key=tab==='med'?'ms':tab;
   function head(){
     if(tab==='med')return '<th>#</th><th>GRACZ</th><th class="n">🥇</th><th class="n">🥈</th><th class="n">🥉</th>';
-    return '<th>#</th><th>GRACZ</th><th class="n">'+(tab==='cards'?'KARTY':tab==='ach'?'OSIĄGNIĘCIA':'PUNKTY')+'</th>';
+    return '<th>#</th><th>GRACZ</th><th class="n">'+(tab==='cards'?'KARTY':tab==='ach'?'OSIĄGNIĘCIA':tab==='xp'?'XP':'PUNKTY')+'</th>';
   }
   function vals(r){
     if(tab==='med')return '<td class="n">'+r.g+'</td><td class="n">'+r.s+'</td><td class="n">'+r.b+'</td>';
     if(tab==='cards')return '<td class="n">'+r.cards+' / '+TOTAL_CARDS+'</td>';
     if(tab==='ach')return '<td class="n">'+r.ach+' / '+N+'</td>';
+    if(tab==='xp')return '<td class="n">'+fmt(r.xp)+' XP</td>';
     return '<td class="n">'+fmt(r.wc)+'</td>';
   }
   var html='<table><thead><tr>'+head()+'</tr></thead><tbody>',rank=0,prev=null;
@@ -51775,14 +51785,15 @@ match /finishedCareers/{career} {
 match /profiles/{uid} {
   allow read: if true;
   allow create, update: if request.auth != null && request.auth.uid == uid
-    && request.resource.data.keys().hasOnly(['nick','cards','cardList','ach','wc','g','s','b','ms','upd'])
+    && request.resource.data.keys().hasOnly(['nick','cards','cardList','ach','wc','g','s','b','ms','xp','upd'])
     && request.resource.data.nick == get(/databases/$(database)/documents/users/$(uid)).data.username
     && request.resource.data.cards is int && request.resource.data.cards >= 0 && request.resource.data.cards <= 50
     && request.resource.data.cardList is list && request.resource.data.cardList.size() <= 50
     && request.resource.data.ach is int && request.resource.data.ach >= 0
     && request.resource.data.wc is int && request.resource.data.wc >= 0
     && request.resource.data.g is int && request.resource.data.s is int && request.resource.data.b is int
-    && request.resource.data.ms is int && request.resource.data.upd is int;
+    && request.resource.data.ms is int && request.resource.data.upd is int
+    && (!('xp' in request.resource.data) || (request.resource.data.xp is int && request.resource.data.xp >= 0));
 }
 </script><style>#finishedGallery{width:min(940px,95vw);max-height:88dvh;box-sizing:border-box;padding:clamp(14px,3vw,32px);border:1px solid #b0cddd;border-top:5px solid #23789f;border-radius:10px;background:#f5f9fc;color:#122e45;font:500 16px/1.45 system-ui}
 #finishedGallery{font-family:var(--pss-body);background:linear-gradient(140deg,#e5f3fb,#f9fcff 55%,#e1edf4);border-radius:4px;border-top:5px solid #47a9d7;box-shadow:0 18px 70px #071b2d77}
