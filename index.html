@@ -16786,6 +16786,9 @@ window.PSS_competitionRanks=competitionRanks;
     link('__PSS_CORE_GENERATE_SPONSOR_OFFERS',()=>generateSponsorOffers);
     link('CALENDAR_COUNTRIES',()=>CALENDAR_COUNTRIES);
     link('GAME_ACHIEVEMENTS',()=>GAME_ACHIEVEMENTS);
+    /* RANKINGI: medale (te same, co w MEDALE I SUKCESY) i punkty Pucharu Świata gracza */
+    link('__pssMedalCounts',()=>computeCareerMedalCounts);
+    link('__pssWcPoints',()=>function(p){let t=0;try{careerHistoryResults(p).forEach(r=>{if(!r||r.missed||careerSummer(r)||r.level!=='WC'||!(r.type==='regular'||r.type==='tcsRound')||!careerStarted(r,p))return;t+=pointsForRank(Number(r.playerRank||careerPlayerRow(r,p)?.rank||0))||0})}catch(e){}return t});
     link('scenarioBank',()=>scenarioBank);
     link('scenarioAllowed',()=>scenarioAllowed,v=>{scenarioAllowed=v});
     link('achievementScenario',()=>achievementScenario,v=>{achievementScenario=v});
@@ -49949,7 +49952,10 @@ html.pss-wk-open{overflow:hidden;}
         '<div class="wk-bg"></div>'+
         '<button type="button" class="wk-close" id="pssWkClose">‹ ZAMKNIJ</button>'+
         '<div class="wk-tabs" id="pssWkTabs" role="tablist" aria-label="Plansze wyzwania"></div>'+
-        '<div class="wk-hero"><div class="wk-head"><h2 class="wk-name" id="pssWkName"></h2><p class="wk-desc" id="pssWkIntro"></p></div></div>'+
+        '<div class="wk-hero"><div class="wk-head"><h2 class="wk-name" id="pssWkName"></h2><p class="wk-desc" id="pssWkIntro"></p></div>'+
+          '<div class="wk-cd" id="pssWkCd" role="timer"><div class="wk-cd-l">Czas do końca wyzwań</div><div class="wk-cd-t">'+
+            '<div class="wk-cd-u"><b>00</b><small>DNI</small></div><div class="wk-cd-u"><b>00</b><small>GODZ.</small></div>'+
+            '<div class="wk-cd-u"><b>00</b><small>MIN.</small></div><div class="wk-cd-u"><b>00</b><small>SEK.</small></div></div></div></div>'+
         '<div class="wk-cards" id="pssWkCards"></div>'+
         '<div class="wk-foot" id="pssWkFoot"></div>'+
       '</div>';
@@ -49979,6 +49985,7 @@ html.pss-wk-open{overflow:hidden;}
           (ok?'':'<span class="wk-lock" aria-hidden="true">🔒</span>')+
         '</button>'+
         '<div class="wk-under">'+(ok?'<button type="button" class="wk-dl" data-dl="'+i+'">POBIERZ</button>':'<span class="wk-locked-txt">ZABLOKOWANA</span>')+'</div>'+
+        '<div class="wk-pct" data-pk="'+b+'_'+i+'">'+pctHtml(b,i)+'</div>'+
       '</div>';
     }
     var foot=root.querySelector('#pssWkFoot');
@@ -50029,9 +50036,30 @@ html.pss-wk-open{overflow:hidden;}
   function openWeekly(n){
     ensureRoot();if(typeof n==='number'&&n>=0&&n<BOARDS.length)cur=n;evalStored();render();
     root.classList.add('show');document.documentElement.classList.add('pss-wk-open');
+    cdStart();
+    try{if(window.__pssCardStats)window.__pssCardStats.load(function(){if(root&&root.classList.contains('show'))render();});}catch(e){}
     var sc=root;sc.scrollTop=0;
   }
-  function closeWeekly(){if(!root)return;closeDetail();root.classList.remove('show');document.documentElement.classList.remove('pss-wk-open');}
+  /* procent zarejestrowanych graczy, którzy mają daną kartę (dane z modułu rankingów) */
+  function pctHtml(b,i){
+    var S=window.__pssCardStats;if(!S)return '';
+    var v=S.pct(b,i);
+    if(v==null)return '<span class="wk-pct-n">'+(S.state()==='err'?'—':'…')+'</span>';
+    var t=v>0&&v<0.1?'<0,1':(v>=10?String(Math.round(v)):(Math.round(v*10)/10).toLocaleString('pl-PL'));
+    return '<b>'+t+'%</b> graczy ma tę kartę';
+  }
+  /* zegar: do niedzieli 29 listopada 2026, godz. 21:00 czasu polskiego (CET = UTC+1) */
+  var CD_END=Date.UTC(2026,10,29,20,0,0),cdTimer=null;
+  function cdTick(){
+    var el=root&&root.querySelector('#pssWkCd');if(!el)return;
+    var ms=CD_END-Date.now();if(ms<0)ms=0;
+    var s=Math.floor(ms/1000),v=[Math.floor(s/86400),Math.floor(s%86400/3600),Math.floor(s%3600/60),s%60],n=el.querySelectorAll('.wk-cd-u b');
+    for(var i=0;i<4;i++)if(n[i])n[i].textContent=('0'+v[i]).slice(-2);
+    el.classList.toggle('is-end',ms===0);
+  }
+  function cdStart(){cdStop();cdTick();cdTimer=setInterval(cdTick,1000);}
+  function cdStop(){if(cdTimer){clearInterval(cdTimer);cdTimer=null;}}
+  function closeWeekly(){if(!root)return;cdStop();closeDetail();root.classList.remove('show');document.documentElement.classList.remove('pss-wk-open');}
   function refresh(){render();if(detail&&detail.classList.contains('show')&&detail._i!=null)fillDetail(detail._i);if(art&&art.classList.contains('show'))renderArt();}
 
   /* ---------- szczegóły karty ---------- */
@@ -50242,6 +50270,21 @@ html.pss-wk-open{overflow:hidden;}
       '#pssWeekly#pssWeekly .wk-under{width:100%;padding:0 2px;box-sizing:border-box}'+
     '}';
   document.head.appendChild(tabCss);
+  var cdCss=document.createElement('style');
+  cdCss.textContent=
+    '#pssWeekly .wk-pct{min-height:1.2em;text-align:center;color:#cdb877;font-size:clamp(.62rem,.88vw,.82rem);font-weight:600;line-height:1.25;letter-spacing:.02em;text-shadow:0 1px 6px #000}'+
+    '#pssWeekly .wk-pct b{color:#f6c445;font-family:var(--pss-display);font-size:1.18em;font-weight:900;letter-spacing:.03em}'+
+    '#pssWeekly .wk-pct-n{opacity:.55}'+
+    '#pssWeekly .wk-cd{position:absolute;left:3.2vw;bottom:1.6vw;z-index:3;padding:.7vw 1.1vw .9vw;background:rgba(0,0,0,.6);border-left:5px solid #d9a21b;animation:wkRise .7s var(--pss-out) .35s both}'+
+    '#pssWeekly .wk-cd-l{color:#f6c445;font-family:var(--pss-display);font-weight:800;font-size:clamp(.66rem,.95vw,.95rem);letter-spacing:.16em;text-transform:uppercase;text-shadow:0 2px 8px #000}'+
+    '#pssWeekly .wk-cd-t{display:flex;gap:.55vw;margin-top:.5vw}'+
+    '#pssWeekly .wk-cd-u{min-width:clamp(44px,4.4vw,76px);padding:.45vw .3vw .5vw;text-align:center;background:rgba(0,0,0,.55);border:1px solid #8a6a1c;transform:skewX(-8deg)}'+
+    '#pssWeekly .wk-cd-u>*{transform:skewX(8deg)}'+
+    '#pssWeekly .wk-cd-u b{display:block;color:#fff;font-family:var(--pss-display);font-weight:900;font-size:clamp(1.15rem,2.3vw,2.2rem);line-height:1;font-variant-numeric:tabular-nums}'+
+    '#pssWeekly .wk-cd-u small{display:block;margin-top:.25vw;color:#f6c445;font-size:clamp(.5rem,.66vw,.68rem);font-weight:800;letter-spacing:.12em}'+
+    '#pssWeekly .wk-cd.is-end .wk-cd-u b{color:#8d7a4a}'+
+    '@media (max-width:900px){#pssWeekly .wk-cd{position:relative;left:auto;bottom:auto;display:inline-block;margin:14px 18px 0;padding:8px 12px 10px}#pssWeekly .wk-cd-t{gap:6px;margin-top:6px}#pssWeekly .wk-cd-u{padding:5px 4px 6px}}';
+  document.head.appendChild(cdCss);
   function init(){evalStored();prepDark();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 
@@ -50789,7 +50832,8 @@ var SESSION_KEY='pssAcc_session';
 var WEEKLY='pssWeeklyStoch_v1'; /* karty z wyzwań tygodniowych (album) — postęp globalny */
 var XPK='pssXP_v1'; /* XP i poziom gracza — wspólne dla wszystkich karier */
 var WEEKLY2='pssWeeklyB2_v1'; /* karty z planszy 2 wyzwania tygodniowego */
-var GAME_KEYS=['polskiSkoczekCurrentPlayer','polskiSkoczekSave','polskiSkoczekRealAthletes',WEEKLY,WEEKLY2,XPK];
+var LTK='pssLifetime_v1'; /* dziennik dokonań ze wszystkich karier (rankingi) */
+var GAME_KEYS=['polskiSkoczekCurrentPlayer','polskiSkoczekSave','polskiSkoczekRealAthletes',WEEKLY,WEEKLY2,XPK,LTK];
 var lastW2=null;
 var lastW=null;
 var MAIN=GAME_KEYS[0];
@@ -50895,6 +50939,9 @@ function setSessionFrom(j,email,username){
   S={uid:j.localId,email:email,username:username||'',idToken:j.idToken,refreshToken:j.refreshToken,exp:Date.now()+Number(j.expiresIn||3600)*1000};
   saveSession();renderBar();
 }
+
+/* udostępnione modułowi rankingów (profil gracza, statystyki kart) */
+window.__pssCloud={configured:CONFIGURED,FS:FS,api:api,post:post,getToken:getToken,getDoc:getDoc,session:function(){return S},str:str,int:int,fieldInt:fieldInt,fieldStr:fieldStr};
 
 /* ---------- licznik graczy ---------- */
 var countEl;
@@ -51025,6 +51072,12 @@ function applyCloud(c){
       else if(lw!=null)needsPush=true;
       return;
     }
+    if(k===LTK){ /* dziennik dokonań (rankingi): kariery i osiągnięcia tylko przybywają */
+      var lz=lsGet(LTK),cz=c.bundle[LTK];
+      if(cz!=null){var mz=mergeLt(cz,lz);lsSet(k,mz);if(mz!==mergeLt(cz,cz))needsPush=true}
+      else if(lz!=null)needsPush=true;
+      return;
+    }
     if(k===XPK){ /* XP nigdy nie znika ani nie spada */
       var lx=lsGet(XPK),cx=c.bundle[XPK];
       if(cx!=null){var mx=mergeXp(cx,lx);lsSet(k,mx);if(mx!==mergeXp(cx,cx))needsPush=true}
@@ -51069,6 +51122,22 @@ function mergeXp(a,b){
   Object.keys(x.cs).concat(Object.keys(y.cs)).sort().forEach(function(k){cs[k]=1});
   return JSON.stringify({v:2,bonus:Math.max(x.bonus,y.bonus),led:led,cs:cs});
 }
+function ltParse(s){var o=null;try{o=JSON.parse(s||'null')}catch(e){}return (o&&typeof o==='object'&&o.c&&typeof o.c==='object')?o:{v:1,c:{}}}
+function ltEntry(x,y){
+  x=x||{};y=y||{};var m={},a={};
+  Object.keys(x.m||{}).concat(Object.keys(y.m||{})).sort().forEach(function(k){
+    var u=(x.m&&x.m[k])||[0,0,0],v=(y.m&&y.m[k])||[0,0,0];
+    m[k]=[Math.max(u[0]|0,v[0]|0),Math.max(u[1]|0,v[1]|0),Math.max(u[2]|0,v[2]|0)];
+  });
+  (x.a||[]).concat(y.a||[]).forEach(function(id){a[id]=1});
+  return {n:y.n||x.n||'',w:Math.max(+x.w||0,+y.w||0),m:m,a:Object.keys(a).sort()};
+}
+/* dziennik dokonań: łączymy kariery po careerId (maksimum z każdego licznika, suma zbiorów osiągnięć) */
+function mergeLt(a,b){
+  var x=ltParse(a),y=ltParse(b),c={};
+  Object.keys(x.c).concat(Object.keys(y.c)).sort().forEach(function(k){c[k]=ltEntry(x.c[k],y.c[k])});
+  return JSON.stringify({v:1,c:c});
+}
 function absorbWeekly(c){
   var diff=false;
   [WEEKLY,WEEKLY2].forEach(function(k){
@@ -51085,6 +51154,13 @@ function absorbWeekly(c){
     var mx=mergeXp(lx,cx);
     if(mx!==lx){applying=true;lsSet(XPK,mx);applying=false}
     if(mx!==mergeXp(cx,cx))diff=true;
+  }
+  var cl=c.bundle[LTK],ll=lsGet(LTK);
+  if(cl==null){if(ll!=null)diff=true}
+  else{
+    var ml=mergeLt(ll,cl);
+    if(ml!==ll){applying=true;lsSet(LTK,ml);applying=false}
+    if(ml!==mergeLt(cl,cl))diff=true;
   }
   return diff;
 }
@@ -51353,6 +51429,303 @@ if(S&&CONFIGURED){
 }catch(err){console.error('Moduł kont — błąd inicjalizacji:',err)}
 })();
 </script>
+<script id="pss-rankings">
+/* ==========================================================
+   RANKINGI + STATYSTYKI KART
+   • Dziennik dokonań (pssLifetime_v1) zbiera osiągnięcia ze WSZYSTKICH karier gracza –
+     także tych porzuconych przyciskiem NOWA KARIERA. Każda kariera ma własny wpis
+     (klucz = careerId), a osiągnięcia liczą się jako zbiór, więc to samo osiągnięcie
+     odblokowane w kilku karierach jest naliczone tylko raz.
+   • Dziennik synchronizuje moduł kont (razem z zapisem), a ten moduł publikuje
+     z niego podsumowanie gracza w kolekcji Firestore „profiles”.
+   • Ten sam zbiór profili daje procent graczy z daną kartą (ekran WYZWANIE TYGODNIA).
+   ========================================================== */
+(function(){
+'use strict';
+try{
+var PKEY='polskiSkoczekCurrentPlayer',LTK='pssLifetime_v1',W0='pssWeeklyStoch_v1',W1='pssWeeklyB2_v1';
+var BOARD_N=[5,6],TOTAL_CARDS=11;
+/* medale do rankingu: IO, MŚ, MŚ w lotach, Puchar Świata (klasyfikacja), TCS, Puchar Świata w lotach, mistrzostwa kraju */
+var MK=['olympics','worlds','flying','wcGC','tcs','flyingCup','winterPoland','summerPoland','winterNational','summerNational'];
+
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fmt(n){return Number(n||0).toLocaleString('pl-PL')}
+function cloud(){var C=window.__pssCloud;return C&&C.configured?C:null}
+
+/* ---------- dziennik dokonań ---------- */
+function parseLt(raw){var o=null;try{o=JSON.parse(raw||'null')}catch(e){}if(!o||typeof o!=='object'||!o.c||typeof o.c!=='object')o={v:1,c:{}};return o}
+function mergeEntry(x,y){
+  x=x||{};y=y||{};var m={},keys=Object.keys(x.m||{}).concat(Object.keys(y.m||{})).sort(),a={};
+  keys.forEach(function(k){var u=(x.m&&x.m[k])||[0,0,0],v=(y.m&&y.m[k])||[0,0,0];m[k]=[Math.max(u[0]|0,v[0]|0),Math.max(u[1]|0,v[1]|0),Math.max(u[2]|0,v[2]|0)]});
+  (x.a||[]).concat(y.a||[]).forEach(function(id){a[id]=1});
+  return {n:y.n||x.n||'',w:Math.max(+x.w||0,+y.w||0),m:m,a:Object.keys(a).sort()};
+}
+function snapshot(p){
+  var m={},med=null,w=0;
+  try{med=window.__pssMedalCounts?window.__pssMedalCounts(p):null}catch(e){}
+  MK.forEach(function(k){var x=med&&med[k];if(x&&(x.gold||x.silver||x.bronze))m[k]=[+x.gold||0,+x.silver||0,+x.bronze||0]});
+  try{w=Math.round(window.__pssWcPoints?window.__pssWcPoints(p):0)||0}catch(e){}
+  var a=Object.keys(p.gameAchievements&&typeof p.gameAchievements==='object'?p.gameAchievements:{});
+  return {n:String(p.name||''),w:w,m:m,a:a};
+}
+var lastRaw=null;
+function scan(){
+  try{
+    var raw=lsGet(PKEY);if(!raw||raw===lastRaw)return;
+    var p=JSON.parse(raw);if(!p||!p.careerId)return;
+    lastRaw=raw;
+    var lt=parseLt(lsGet(LTK)),cid=String(p.careerId),old=lt.c[cid],merged=mergeEntry(old,snapshot(p));
+    if(JSON.stringify(merged)!==JSON.stringify(old)){lt.c[cid]=merged;lsSet(LTK,JSON.stringify(lt))}
+  }catch(e){console.warn('Rankingi: błąd skanowania kariery',e)}
+}
+/* przed usunięciem kariery (NOWA KARIERA / zaczynanie od nowa) zapisujemy jej ostateczny stan */
+try{
+  var ls=window.localStorage,fake=Object.prototype.hasOwnProperty.call(ls,'setItem')&&typeof ls.setItem==='function';
+  var wrapRm=function(t){var o=t.removeItem;if(typeof o!=='function')return;t.removeItem=function(k){try{if(String(k)===PKEY)scan()}catch(e){}return o.apply(this,arguments)}};
+  if(fake)wrapRm(ls);else wrapRm(Storage.prototype);
+}catch(e){}
+
+function cardList(){
+  var out=[];
+  [[W0,0],[W1,1]].forEach(function(x){
+    var o=null;try{o=JSON.parse(lsGet(x[0])||'null')}catch(e){}
+    var c=(o&&o.cards)||[];
+    for(var i=0;i<BOARD_N[x[1]];i++)if(c[i])out.push(x[1]+'_'+i);
+  });
+  return out;
+}
+function totals(){
+  var lt=parseLt(lsGet(LTK)),w=0,med={},ach={},ids=Object.keys(lt.c);
+  ids.forEach(function(cid){
+    var e=lt.c[cid]||{};w+=+e.w||0;
+    Object.keys(e.m||{}).forEach(function(k){var t=med[k]||(med[k]=[0,0,0]);for(var j=0;j<3;j++)t[j]+=(e.m[k][j]|0)});
+    (e.a||[]).forEach(function(id){ach[id]=1});
+  });
+  var g=0,s=0,b=0;Object.keys(med).forEach(function(k){g+=med[k][0];s+=med[k][1];b+=med[k][2]});
+  var cl=cardList();
+  return {wc:Math.round(w),g:g,s:s,b:b,ms:g*1e8+Math.min(s,9999)*1e4+Math.min(b,9999),ach:Object.keys(ach).length,cardList:cl,cards:cl.length,careers:ids.length};
+}
+
+/* ---------- publikowanie profilu gracza ---------- */
+var pubSig='',pubBusy=false,pubNext=0,pubErr=null;
+function publishNow(){
+  var C=cloud();if(!C||pubBusy||Date.now()<pubNext)return;
+  var S=C.session();if(!S||!S.username)return;
+  var t=totals(),sig=S.uid+'|'+JSON.stringify([t.cards,t.cardList,t.ach,t.wc,t.g,t.s,t.b,S.username]);
+  if(sig===pubSig)return;
+  pubBusy=true;
+  C.getToken().then(function(tok){
+    var f={nick:C.str(S.username),cards:C.int(t.cards),cardList:{arrayValue:{values:t.cardList.map(function(x){return C.str(x)})}},
+      ach:C.int(t.ach),wc:C.int(t.wc),g:C.int(t.g),s:C.int(t.s),b:C.int(t.b),ms:C.int(t.ms),upd:C.int(Date.now())};
+    return C.api(C.FS+'/profiles/'+S.uid,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({fields:f})});
+  }).then(function(){pubSig=sig;pubErr=null;cache=null;rkCache={}}).catch(function(e){pubErr=e&&e.status===403?'rules':'net';pubNext=Date.now()+60000}).then(function(){pubBusy=false});
+}
+
+/* ---------- procent graczy z daną kartą ---------- */
+var cache=null,loading=false,cbs=[],cstate='idle';
+function aggCount(C,where,tok){
+  return C.post(C.FS+':runAggregationQuery',{structuredAggregationQuery:{structuredQuery:{from:[{collectionId:'profiles'}],where:where},aggregations:[{alias:'n',count:{}}]}},tok)
+    .then(function(r){var v=r&&r[0]&&r[0].result&&r[0].result.aggregateFields&&r[0].result.aggregateFields.n;return v?Number(v.integerValue)||0:0});
+}
+function loadCardStats(cb){
+  var C=cloud();
+  if(!C){cstate='err';if(cb)cb();return}
+  if(cache&&Date.now()-cache.t<300000){if(cb)cb();return}
+  if(cb)cbs.push(cb);
+  if(loading)return;
+  loading=true;cstate=cache?'ok':'loading';
+  var keys=[];BOARD_N.forEach(function(n,b){for(var i=0;i<n;i++)keys.push(b+'_'+i)});
+  (C.session()?C.getToken().catch(function(){return null}):Promise.resolve(null)).then(function(tok){
+    var jobs=keys.map(function(k){
+      return aggCount(C,{fieldFilter:{field:{fieldPath:'cardList'},op:'ARRAY_CONTAINS',value:{stringValue:k}}},tok).then(function(n){return {k:k,n:n}});
+    });
+    jobs.push(C.getDoc('stats/players',tok).then(function(d){return {k:'_total',n:C.fieldInt(d,'count')}}));
+    return Promise.all(jobs);
+  }).then(function(rs){
+    var counts={},total=0;rs.forEach(function(r){if(r.k==='_total')total=r.n;else counts[r.k]=r.n});
+    cache={t:Date.now(),counts:counts,total:total};cstate='ok';
+  }).catch(function(){cstate=cache?'ok':'err'}).then(function(){
+    loading=false;var l=cbs;cbs=[];l.forEach(function(f){try{f()}catch(e){}});
+  });
+}
+window.__pssCardStats={
+  load:loadCardStats,
+  state:function(){return cstate},
+  pct:function(b,i){
+    if(!cache||!(cache.total>0))return null;
+    var n=cache.counts[b+'_'+i];if(n==null)return null;
+    return Math.min(100,n/cache.total*100);
+  }
+};
+
+/* ---------- ranking: dane z serwera ---------- */
+var FIELD={cards:'cards',ach:'ach',wc:'wc',med:'ms'};
+var rkCache={};
+function intOf(f,k){return f&&f[k]&&f[k].integerValue!=null?Number(f[k].integerValue)||0:0}
+function fetchTop(tab){
+  var C=cloud();if(!C)return Promise.reject(new Error('NOCFG'));
+  var field=FIELD[tab],c=rkCache[tab];
+  if(c&&Date.now()-c.t<60000)return Promise.resolve(c.v);
+  return (C.session()?C.getToken().catch(function(){return null}):Promise.resolve(null)).then(function(tok){
+    var q={structuredQuery:{from:[{collectionId:'profiles'}],
+      where:{fieldFilter:{field:{fieldPath:field},op:'GREATER_THAN',value:{integerValue:'0'}}},
+      orderBy:[{field:{fieldPath:field},direction:'DESCENDING'}],limit:100}};
+    return C.post(C.FS+':runQuery',q,tok).then(function(res){
+      var rows=res.filter(function(x){return x.document}).map(function(x){
+        var d=x.document,f=d.fields||{};
+        return {uid:d.name.split('/').pop(),nick:(f.nick&&f.nick.stringValue)||'—',cards:intOf(f,'cards'),ach:intOf(f,'ach'),wc:intOf(f,'wc'),g:intOf(f,'g'),s:intOf(f,'s'),b:intOf(f,'b'),ms:intOf(f,'ms')};
+      });
+      var t=totals(),own=C.session(),mine=null,val=t[tab==='med'?'ms':tab];
+      rows.forEach(function(r){if(own&&r.uid===own.uid)mine=r});
+      var done=function(extra){var v={rows:rows,extra:extra||null};rkCache[tab]={t:Date.now(),v:v};return v};
+      if(mine||!own||!(val>0)||rows.length<100)return done();
+      /* gracz poza pierwszą setką: liczymy jego miejsce */
+      return aggCount(C,{fieldFilter:{field:{fieldPath:field},op:'GREATER_THAN',value:{integerValue:String(val)}}},tok)
+        .then(function(n){return done({rank:n+1,nick:own.username||'Ty',cards:t.cards,ach:t.ach,wc:t.wc,g:t.g,s:t.s,b:t.b,ms:t.ms,uid:own.uid})})
+        .catch(function(){return done()});
+    });
+  });
+}
+
+/* ---------- ranking: okno ---------- */
+var TABS=[
+  {id:'cards',label:'ZEBRANE KARTY'},
+  {id:'ach',label:'ODBLOKOWANE OSIĄGNIĘCIA'},
+  {id:'wc',label:'PUNKTY PUCHARU ŚWIATA'},
+  {id:'med',label:'MEDALE'}
+];
+var css=document.createElement('style');
+css.textContent=
+'#pssRank{position:fixed;inset:0;z-index:100600;display:none;place-items:center;padding:14px;background:rgba(11,32,52,.62);font-family:var(--pss-body,system-ui,-apple-system,Segoe UI,sans-serif)}'+
+'#pssRank.show{display:grid}'+
+'#pssRank .pssrk-card{width:min(820px,100%);max-height:94vh;display:flex;flex-direction:column;background:#fff;color:#173653;border-top:6px solid #d9a21b;border-radius:6px;box-shadow:0 24px 70px rgba(0,0,0,.45);overflow:hidden}'+
+'#pssRank .pssrk-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 8px}'+
+'#pssRank .pssrk-head h2{margin:0;font-family:var(--pss-display,inherit);font-weight:900;font-size:1.7rem;letter-spacing:.08em;color:#0d2b45}'+
+'#pssRank .pssrk-x{cursor:pointer;border:0;padding:9px 16px;background:#e8eef4;color:#173653;font:900 .8rem/1 inherit;letter-spacing:.08em;transform:skewX(-8deg)}'+
+'#pssRank .pssrk-x:hover{background:#d9a21b;color:#1a1200}'+
+'#pssRank .pssrk-me{margin:0 20px 10px;padding:9px 12px;background:#fff7dc;border-left:5px solid #d9a21b;font-size:.86rem;font-weight:700;line-height:1.5}'+
+'#pssRank .pssrk-me b{color:#0d2b45}'+
+'#pssRank .pssrk-tabs{display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 10px}'+
+'#pssRank .pssrk-tab{cursor:pointer;border:2px solid #c9d6e2;background:#fff;color:#35566f;padding:8px 12px;font:900 .74rem/1.1 inherit;letter-spacing:.05em;transform:skewX(-8deg);transition:.15s}'+
+'#pssRank .pssrk-tab:hover{border-color:#d9a21b}'+
+'#pssRank .pssrk-tab.on{background:#f6c445;border-color:#d9a21b;color:#1a1200}'+
+'#pssRank .pssrk-body{flex:1;overflow:auto;padding:0 20px 8px;min-height:140px}'+
+'#pssRank table{width:100%;border-collapse:collapse;font-size:.95rem}'+
+'#pssRank th{position:sticky;top:0;background:#fff;text-align:left;padding:8px 10px;font-size:.72rem;letter-spacing:.1em;color:#668296;border-bottom:2px solid #e1eaf1}'+
+'#pssRank td{padding:8px 10px;border-bottom:1px solid #edf2f6}'+
+'#pssRank td.n,#pssRank th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'+
+'#pssRank td.r{width:46px;font-weight:900;color:#668296}'+
+'#pssRank tr.t1 td.r{color:#b8860b}#pssRank tr.t2 td.r{color:#7d8791}#pssRank tr.t3 td.r{color:#a0622d}'+
+'#pssRank tr.t1 td,#pssRank tr.t2 td,#pssRank tr.t3 td{font-weight:800}'+
+'#pssRank tr.me td{background:#fff3c4}'+
+'#pssRank tr.gap td{text-align:center;color:#99aab8;padding:2px;border:0}'+
+'#pssRank .pssrk-msg{padding:26px 6px;text-align:center;color:#456;font-weight:700;line-height:1.5}'+
+'#pssRank .pssrk-msg a{color:#2878a9}'+
+'#pssRank .pssrk-note{margin:0;padding:8px 20px 14px;font-size:.74rem;color:#6a8092;line-height:1.45}'+
+'@media (max-width:600px){#pssRank .pssrk-head h2{font-size:1.3rem}#pssRank .pssrk-tab{padding:7px 8px;font-size:.66rem}#pssRank table{font-size:.85rem}#pssRank td,#pssRank th{padding:7px 6px}}';
+document.head.appendChild(css);
+
+var root=null,curTab='cards',seq=0;
+function ensureRoot(){
+  if(root)return;
+  root=document.createElement('div');root.id='pssRank';
+  root.innerHTML='<div class="pssrk-card" role="dialog" aria-modal="true" aria-label="Rankingi">'+
+    '<div class="pssrk-head"><h2>RANKINGI</h2><button type="button" class="pssrk-x" id="pssrkClose">ZAMKNIJ</button></div>'+
+    '<div class="pssrk-me" id="pssrkMe"></div>'+
+    '<div class="pssrk-tabs" id="pssrkTabs" role="tablist"></div>'+
+    '<div class="pssrk-body" id="pssrkBody"></div>'+
+    '<p class="pssrk-note">Ranking sumuje dokonania ze wszystkich karier gracza – zakończonych i porzuconych (NOWA KARIERA). Każde osiągnięcie liczy się tylko raz. W medalach liczą się miejsca 1–3 w: igrzyskach olimpijskich, mistrzostwach świata, mistrzostwach świata w lotach, Pucharze Świata, Turnieju Czterech Skoczni, Pucharze Świata w lotach i mistrzostwach kraju.</p>'+
+  '</div>';
+  document.body.appendChild(root);
+  root.addEventListener('mousedown',function(e){if(e.target===root)closeRank()});
+  root.querySelector('#pssrkClose').addEventListener('click',closeRank);
+  root.querySelector('#pssrkTabs').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-t]');if(b)setTab(b.getAttribute('data-t'))});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&root&&root.classList.contains('show'))closeRank()});
+}
+function openRank(){
+  scan();ensureRoot();root.classList.add('show');renderMe();setTab(curTab);
+  publishNow();
+}
+function closeRank(){if(root)root.classList.remove('show')}
+function renderMe(){
+  var t=totals(),C=window.__pssCloud,S=C&&C.session&&C.session();
+  var N=(window.GAME_ACHIEVEMENTS&&window.GAME_ACHIEVEMENTS.length)||'?';
+  root.querySelector('#pssrkMe').innerHTML='<b>Twój dorobek ze wszystkich karier:</b> karty <b>'+t.cards+'/'+TOTAL_CARDS+'</b> · osiągnięcia <b>'+t.ach+'/'+N+'</b> · punkty PŚ <b>'+fmt(t.wc)+'</b> · medale 🥇 <b>'+t.g+'</b> 🥈 <b>'+t.s+'</b> 🥉 <b>'+t.b+'</b>'+
+    (S?'':'<br>Zaloguj się na konto, aby Twój wynik pojawił się w rankingu.');
+}
+function setTab(id){
+  curTab=id;var my=++seq;
+  root.querySelector('#pssrkTabs').innerHTML=TABS.map(function(t){return '<button type="button" role="tab" class="pssrk-tab'+(t.id===id?' on':'')+'" data-t="'+t.id+'" aria-selected="'+(t.id===id)+'">'+t.label+'</button>'}).join('');
+  var body=root.querySelector('#pssrkBody');
+  body.innerHTML='<div class="pssrk-msg">Wczytuję ranking…</div>';
+  fetchTop(id).then(function(v){if(my===seq)drawTable(id,v)}).catch(function(e){if(my===seq)drawErr(e)});
+}
+function drawErr(e){
+  var body=root.querySelector('#pssrkBody'),msg;
+  if(!cloud())msg='Rankingi wymagają połączenia z serwerem kont, które nie jest skonfigurowane.';
+  else if(e&&(e.status===403||/PERMISSION/.test(e.code||'')))msg='Serwer odrzucił zapytanie – właściciel gry musi dodać reguły dla kolekcji „profiles” w Firestore (są w pliku z regułami).<br><a id="pssrkRules" download="Archiwum_Firestore.rules">Pobierz reguły</a>';
+  else if(!navigator.onLine||e instanceof TypeError)msg='Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.';
+  else msg='Nie udało się wczytać rankingu. Spróbuj ponownie za chwilę.';
+  body.innerHTML='<div class="pssrk-msg">'+msg+'</div>';
+  var a=body.querySelector('#pssrkRules');
+  if(a){var el=document.getElementById('pss-finished-careers-rules');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(el?el.textContent:'')}
+}
+function drawTable(tab,v){
+  var C=window.__pssCloud,S=C&&C.session&&C.session(),body=root.querySelector('#pssrkBody');
+  var rows=v.rows;
+  if(!rows.length){body.innerHTML='<div class="pssrk-msg">Nikt nie pojawił się jeszcze w tym rankingu. Zdobądź pierwszy wynik!</div>';return}
+  var N=(window.GAME_ACHIEVEMENTS&&window.GAME_ACHIEVEMENTS.length)||'?';
+  var key=tab==='med'?'ms':tab;
+  function head(){
+    if(tab==='med')return '<th>#</th><th>GRACZ</th><th class="n">🥇</th><th class="n">🥈</th><th class="n">🥉</th>';
+    return '<th>#</th><th>GRACZ</th><th class="n">'+(tab==='cards'?'KARTY':tab==='ach'?'OSIĄGNIĘCIA':'PUNKTY')+'</th>';
+  }
+  function vals(r){
+    if(tab==='med')return '<td class="n">'+r.g+'</td><td class="n">'+r.s+'</td><td class="n">'+r.b+'</td>';
+    if(tab==='cards')return '<td class="n">'+r.cards+' / '+TOTAL_CARDS+'</td>';
+    if(tab==='ach')return '<td class="n">'+r.ach+' / '+N+'</td>';
+    return '<td class="n">'+fmt(r.wc)+'</td>';
+  }
+  var html='<table><thead><tr>'+head()+'</tr></thead><tbody>',rank=0,prev=null;
+  rows.forEach(function(r,i){
+    if(r[key]!==prev){rank=i+1;prev=r[key]}
+    var cls=(rank<=3?' t'+rank:'')+(S&&r.uid===S.uid?' me':'');
+    html+='<tr class="'+cls.trim()+'"><td class="r">'+rank+'.</td><td>'+esc(r.nick)+'</td>'+vals(r)+'</tr>';
+  });
+  if(v.extra){
+    html+='<tr class="gap"><td colspan="5">⋯</td></tr><tr class="me"><td class="r">'+v.extra.rank+'.</td><td>'+esc(v.extra.nick)+'</td>'+vals(v.extra)+'</tr>';
+  }
+  body.innerHTML=html+'</tbody></table>';
+}
+
+/* ---------- przycisk RANKINGI na ekranie startowym ---------- */
+function ensureBtn(){
+  var host=document.querySelector('.pss-hero-btns');if(!host)return;
+  var b=document.getElementById('pssRankBtn');
+  if(!b){b=document.createElement('button');b.type='button';b.id='pssRankBtn';b.className='pss-gold-btn';b.textContent='RANKINGI';b.title='Rankingi graczy'}
+  if(b.parentNode!==host){
+    var w=document.getElementById('pssWeeklyBtnStart');
+    if(w&&w.parentNode===host)w.insertAdjacentElement('afterend',b);else host.appendChild(b);
+  }
+}
+document.addEventListener('click',function(e){
+  var t=e.target;if(t&&t.closest&&t.closest('#pssRankBtn')){e.preventDefault();openRank()}
+});
+ensureBtn();
+setInterval(ensureBtn,800);
+new MutationObserver(function(){if(!document.getElementById('pssRankBtn'))ensureBtn()}).observe(document.body,{childList:true,subtree:true});
+
+/* ---------- start ---------- */
+window.PSS_RANK={open:openRank,totals:totals,scan:scan,publish:publishNow};
+setTimeout(function(){scan();publishNow()},3000);
+setInterval(function(){scan();publishNow()},5000);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')scan()});
+window.addEventListener('pagehide',scan);
+}catch(err){console.error('Rankingi — błąd inicjalizacji:',err)}
+})();
+</script>
 
 <style>
 #careerScreen .career-topbar{max-width:calc(100vw - 54px);box-sizing:border-box}
@@ -51397,6 +51770,19 @@ match /finishedCareers/{career} {
       && request.resource.data.uid == request.auth.uid
       && request.resource.data.payload is bytes && request.resource.data.payload.size() <= 420000;
   }
+}
+// RANKINGI i statystyki kart: publiczne podsumowanie gracza (tylko nick i liczby).
+match /profiles/{uid} {
+  allow read: if true;
+  allow create, update: if request.auth != null && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['nick','cards','cardList','ach','wc','g','s','b','ms','upd'])
+    && request.resource.data.nick == get(/databases/$(database)/documents/users/$(uid)).data.username
+    && request.resource.data.cards is int && request.resource.data.cards >= 0 && request.resource.data.cards <= 50
+    && request.resource.data.cardList is list && request.resource.data.cardList.size() <= 50
+    && request.resource.data.ach is int && request.resource.data.ach >= 0
+    && request.resource.data.wc is int && request.resource.data.wc >= 0
+    && request.resource.data.g is int && request.resource.data.s is int && request.resource.data.b is int
+    && request.resource.data.ms is int && request.resource.data.upd is int;
 }
 </script><style>#finishedGallery{width:min(940px,95vw);max-height:88dvh;box-sizing:border-box;padding:clamp(14px,3vw,32px);border:1px solid #b0cddd;border-top:5px solid #23789f;border-radius:10px;background:#f5f9fc;color:#122e45;font:500 16px/1.45 system-ui}
 #finishedGallery{font-family:var(--pss-body);background:linear-gradient(140deg,#e5f3fb,#f9fcff 55%,#e1edf4);border-radius:4px;border-top:5px solid #47a9d7;box-shadow:0 18px 70px #071b2d77}
@@ -51912,6 +52298,46 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     return ev;
   };
   w.__loopGuard=1; window.pickSeasonEvent=w;
+})();
+</script>
+<script>
+/* PSS fix: martwe przyciski symulacji przy zapisanym, ale niewidocznym zdarzeniu (pendingEventId) */
+(function(){
+  'use strict';
+  var SIM_SEL='.sim-btn[data-sim],[data-summer-sim],#continueSimulationBtn';
+  function overlayVisible(){
+    var ov=document.getElementById('seasonEventOverlay');
+    return !!(ov&&ov.classList.contains('show'));
+  }
+  function recover(reason){
+    try{
+      if(typeof window.loadPlayer!=='function')return false;
+      var p=window.loadPlayer();
+      if(!p||!p.pendingEventId)return false;
+      if(overlayVisible())return false;
+      if(!p.pendingEvent||typeof p.pendingEvent!=='object'){
+        p.pendingEventId=null;p.pendingEvent=null;
+        if(typeof window.persist==='function')window.persist(p);
+        return true;
+      }
+      if(typeof window.showScenarioEvent==='function'){
+        window.showScenarioEvent(p.pendingEvent);
+        return true;
+      }
+    }catch(e){try{console.error('PSS pending recovery failed ('+reason+')',e)}catch(_e){}}
+    return false;
+  }
+  /* 1) klik w przycisk symulacji: najpierw przywróć zdarzenie, zamiast cichego nic */
+  window.addEventListener('click',function(ev){
+    try{
+      var t=ev.target&&ev.target.closest?ev.target.closest(SIM_SEL):null;
+      if(!t)return;
+      if(recover('click')){ev.preventDefault();ev.stopImmediatePropagation();}
+    }catch(e){}
+  },true);
+  /* 2) po wczytaniu gry */
+  function boot(){setTimeout(function(){recover('load')},1800);}
+  if(document.readyState==='complete')boot();else window.addEventListener('load',boot);
 })();
 </script>
 </body>
