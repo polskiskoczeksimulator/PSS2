@@ -52950,43 +52950,134 @@ html[data-pss-theme="christmas"],.sw-christmas{--sky:radial-gradient(circle at 1
 .pss-theme-sw:is(.sw-glacier,.sw-aurora,.sw-christmas){background:var(--sky)}
 html:is([data-pss-theme="glacier"],[data-pss-theme="aurora"],[data-pss-theme="christmas"]) :is(.game-screen,.career-screen,.shop-screen,.calendar-screen,.results-screen,.sponsor-screen,.start-competition-screen){background:var(--sky)}
 </style>
-<script type="text/plain" id="pss-finished-careers-rules">// Fragment do dodania WEWNĄTRZ match /databases/{database}/documents
-// w istniejących regułach Firestore projektu gry.
-match /finishedCareers/{career} {
-  function ownerPath() {
-    return request.auth != null && career.matches(request.auth.uid + '_[0-9a-f]+');
+<script type="text/plain" id="pss-finished-careers-rules">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function userDoc(uid) { return /databases/$(database)/documents/users/$(uid); }
+
+    // Nazwy użytkowników: unikalność i logowanie po nazwie
+    match /usernames/{id} {
+      allow get: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid','email','name'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email.lower() == request.auth.token.email.lower()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 20;
+    }
+
+    // Profil gracza (tylko właściciel, tylko jednorazowe utworzenie)
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['username','createdAt'])
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 3
+        && request.resource.data.username.size() <= 20
+        && request.resource.data.createdAt is int;
+    }
+
+    // Licznik graczy: rośnie o 1, tylko przy zakładaniu nowego konta
+    match /stats/players {
+      allow get: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == 1
+        && !exists(userDoc(request.auth.uid))
+        && existsAfter(userDoc(request.auth.uid));
+      allow update: if signedIn()
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == resource.data.count + 1
+        && !exists(userDoc(request.auth.uid))
+        && existsAfter(userDoc(request.auth.uid));
+    }
+
+    // Rozpoczęta kariera + XP + karty wyzwań + dziennik dokonań:
+    // tylko właściciel konta, z dowolnego urządzenia. Brak delete.
+    match /saves/{uid} {
+      allow get: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['data','updatedAt'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 950000
+        && request.resource.data.updatedAt is int
+        && request.resource.data.updatedAt <= request.time.toMillis() + 86400000;
+    }
+
+    // Archiwum zakończonych karier: czyta każdy zalogowany,
+    // zapisuje tylko właściciel i tylko raz (bez edycji i usuwania)
+    match /finishedCareers/{career} {
+      function ownerPath() {
+        return request.auth != null && career.matches(request.auth.uid + '_[0-9a-f]+');
+      }
+      allow read: if request.auth != null;
+      allow create: if ownerPath()
+        && request.resource.data.keys().hasOnly(['uid','nick','summary','parts','encoding','generation'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.nick == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username
+        && request.resource.data.summary is string && request.resource.data.summary.size() < 20000
+        && request.resource.data.parts is int && request.resource.data.parts > 0
+        && request.resource.data.encoding in ['gzip','json']
+        && request.resource.data.generation is string;
+      match /parts/{part} {
+        allow get: if request.auth != null
+          && exists(/databases/$(database)/documents/finishedCareers/$(career));
+        allow create: if ownerPath()
+          && !exists(/databases/$(database)/documents/finishedCareers/$(career))
+          && request.resource.data.keys().hasOnly(['uid','payload'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.payload is bytes
+          && request.resource.data.payload.size() <= 420000;
+      }
+    }
+
+    // RANKINGI i statystyki kart: publiczne podsumowanie gracza (tylko nick i liczby).
+    // Czyta każdy (także niezalogowany), zapisuje tylko właściciel własny profil.
+    // Pole xp (ranking ZDOBYTE XP) jest opcjonalne, żeby starsze wersje gry też działały.
+    match /profiles/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nick','cards','cardList','ach','wc','g','s','b','ms','xp','upd'])
+        && request.resource.data.nick == get(/databases/$(database)/documents/users/$(uid)).data.username
+        && request.resource.data.cards is int && request.resource.data.cards >= 0 && request.resource.data.cards <= 50
+        && request.resource.data.cardList is list && request.resource.data.cardList.size() <= 50
+        && request.resource.data.ach is int && request.resource.data.ach >= 0
+        && request.resource.data.wc is int && request.resource.data.wc >= 0
+        && request.resource.data.g is int && request.resource.data.s is int && request.resource.data.b is int
+        && request.resource.data.ms is int && request.resource.data.upd is int
+        && (!('xp' in request.resource.data) || (request.resource.data.xp is int && request.resource.data.xp >= 0));
+    }
+
+    // REKORDY GLOBALNE SKOCZNI: jeden dokument na skocznię (id: nazwa_hs).
+    // Dokument zawiera najdłuższy skok ZALOGOWANEGO gracza (zawodnicy NPC tu nie trafiają).
+    // Czyta każdy zalogowany; zapis tylko własnego rekordu i tylko lepszym wynikiem. Brak delete.
+    match /hillRecords/{hillId} {
+      function recOk() {
+        let d = request.resource.data;
+        return request.auth != null
+          && d.keys().hasAll(['hill', 'hs', 'dist', 'uid', 'acc', 'name'])
+          && d.keys().hasOnly(['hill', 'hs', 'k', 'type', 'dist', 'name', 'acc', 'uid', 'nat',
+                               'season', 'phase', 'comp', 'date', 'src', 'updatedAt'])
+          && d.uid == request.auth.uid
+          // nick konta musi zgadzać się z tym zapisanym przy rejestracji
+          && d.acc == get(userDoc(request.auth.uid)).data.username
+          && d.dist is number && d.dist > 0 && d.dist <= 300
+          && d.hs is int && d.hs > 0 && d.hs <= 300
+          && d.hill is string && d.hill.size() > 0 && d.hill.size() <= 60
+          && d.name is string && d.name.size() <= 40;
+      }
+
+      allow read: if signedIn();
+      allow create: if recOk();
+      // nadpisać można tylko dłuższym skokiem niż obecny rekord
+      allow update: if recOk() && request.resource.data.dist > resource.data.dist;
+      allow delete: if false;
+    }
   }
-  allow read: if request.auth != null;
-  allow create: if ownerPath()
-    && request.resource.data.keys().hasOnly(['uid','nick','summary','parts','encoding','generation'])
-    && request.resource.data.uid == request.auth.uid
-    && request.resource.data.nick == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username
-    && request.resource.data.summary is string && request.resource.data.summary.size() < 20000
-    && request.resource.data.parts is int && request.resource.data.parts > 0
-    && request.resource.data.encoding in ['gzip','json']
-    && request.resource.data.generation is string;
-  match /parts/{part} {
-    allow get: if request.auth != null && exists(/databases/$(database)/documents/finishedCareers/$(career));
-    allow create: if ownerPath()
-      && !exists(/databases/$(database)/documents/finishedCareers/$(career))
-      && request.resource.data.keys().hasOnly(['uid','payload'])
-      && request.resource.data.uid == request.auth.uid
-      && request.resource.data.payload is bytes && request.resource.data.payload.size() <= 420000;
-  }
-}
-// RANKINGI i statystyki kart: publiczne podsumowanie gracza (tylko nick i liczby).
-match /profiles/{uid} {
-  allow read: if true;
-  allow create, update: if request.auth != null && request.auth.uid == uid
-    && request.resource.data.keys().hasOnly(['nick','cards','cardList','ach','wc','g','s','b','ms','xp','upd'])
-    && request.resource.data.nick == get(/databases/$(database)/documents/users/$(uid)).data.username
-    && request.resource.data.cards is int && request.resource.data.cards >= 0 && request.resource.data.cards <= 50
-    && request.resource.data.cardList is list && request.resource.data.cardList.size() <= 50
-    && request.resource.data.ach is int && request.resource.data.ach >= 0
-    && request.resource.data.wc is int && request.resource.data.wc >= 0
-    && request.resource.data.g is int && request.resource.data.s is int && request.resource.data.b is int
-    && request.resource.data.ms is int && request.resource.data.upd is int
-    && (!('xp' in request.resource.data) || (request.resource.data.xp is int && request.resource.data.xp >= 0));
 }
 </script><style>#finishedGallery{width:min(940px,95vw);max-height:88dvh;box-sizing:border-box;padding:clamp(14px,3vw,32px);border:1px solid #b0cddd;border-top:5px solid #23789f;border-radius:10px;background:#f5f9fc;color:#122e45;font:500 16px/1.45 system-ui}
 #finishedGallery{font-family:var(--pss-body);background:linear-gradient(140deg,#e5f3fb,#f9fcff 55%,#e1edf4);border-radius:4px;border-top:5px solid #47a9d7;box-shadow:0 18px 70px #071b2d77}
@@ -54349,9 +54440,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 <script id="pss-hill-records">
 /* === REKORDY SKOCZNI ===
-   REKORDY LOKALNE  – najlepsze skoki gracza na każdej skoczni (kariery z archiwum + trening).
-   REKORDY GLOBALNE – na każdej skoczni tylko jeden, najdłuższy skok spośród wszystkich zawodników w archiwum gry.
-   Dane pochodzą z archiwum wyników gry (window.__pssArchive) oraz z rekordów treningowych. */
+   REKORDY LOKALNE  – najlepsze skoki gracza na każdej skoczni (trening + własne skoki w konkursach).
+   REKORDY GLOBALNE – na każdej skoczni tylko jeden, najdłuższy skok spośród ZALOGOWANYCH graczy.
+   Skoki zawodników NPC (archiwum wyników) NIE trafiają do rekordów globalnych.
+   Rekordy globalne leżą w kolekcji Firestore „hillRecords” (1 dokument na skocznię); gra sama wysyła tam
+   najlepsze skoki zalogowanego gracza (pola: hill, hs, dist, uid, acc, name, type, updatedAt; reguły: pss-finished-careers-rules). */
 (function(){
 'use strict';
 if(window.PSS_HILL_RECORDS)return;
@@ -54374,24 +54467,8 @@ function classify(hs,ht){
 
 /* ---------- zbieranie danych ---------- */
 var cache=null,loading=null;
-function listCareers(){
-  return new Promise(function(res){
-    try{
-      var rq=indexedDB.open('pssArchiveV1'),done=false;
-      rq.onupgradeneeded=function(){try{rq.transaction.abort()}catch(e){}};
-      rq.onerror=function(){if(!done){done=true;res([])}};
-      rq.onsuccess=function(){
-        var db=rq.result;
-        try{
-          if(!db.objectStoreNames.contains('careers')){db.close();done=true;res([]);return}
-          var g=db.transaction('careers','readonly').objectStore('careers').getAll();
-          g.onsuccess=function(){db.close();done=true;res((g.result||[]).map(function(c){return c.id}))};
-          g.onerror=function(){db.close();done=true;res([])};
-        }catch(e){try{db.close()}catch(x){}done=true;res([])}
-      };
-    }catch(e){res([])}
-  });
-}
+function cloud(){var C=window.__pssCloud;return C&&C.configured?C:null}
+function lsJson(k){try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){return{}}}
 function catalogFind(name,hs){
   try{
     var c=window.PSS_HILL_TOUR.catalog(),best=null,bd=1e9,n=norm(name);
@@ -54399,9 +54476,8 @@ function catalogFind(name,hs){
     return best;
   }catch(e){return null}
 }
-function collect(){
-  var H=Object.create(null);
-  function hillOf(course,k,hs,ht){
+function hillMaker(H){
+  return function(course,k,hs,ht){
     var name=bname(course);if(!name)return null;
     hs=Number(hs)||0;k=Number(k)||0;
     var f=null;
@@ -54412,55 +54488,90 @@ function collect(){
     if(!h.k&&k)h.k=k;
     return h;
   }
-  function addJump(h,d,who){
-    if(!h||!(d>0))return;
-    if(!h.g||d>h.g.d)h.g=Object.assign({d:d},who);
-    if(who.player&&(!h.l||d>h.l.d))h.l=Object.assign({d:d},who);
-  }
-  function jumps(j,fn){(j||[]).forEach(function(q){if(q&&!q[2]&&!q[3]){var d=Number(q[0]);if(d>0)fn(d)}})}
-  var api=window.__pssArchive&&window.__pssArchive.api,pp=Promise.resolve();
-  if(api&&api.prepare){
-    pp=api.prepare().then(listCareers).then(function(ids){
-      var set={},cur=api.getCareer&&api.getCareer();
-      if(cur){set[cur]=1;set[cur+':W']=1}
-      ids.forEach(function(id){id=String(id).replace(/:W$/,'');set[id]=1;set[id+':W']=1});
-      return Promise.all(Object.keys(set).map(function(c){
-        return api.loadMeta(c).then(function(meta){return Promise.all((meta||[]).map(function(m){return api.loadRecs(c,m.season,m.phase)}))}).catch(function(){return[]});
-      }));
-    }).then(function(parts){
-      parts.forEach(function(arr){(arr||[]).forEach(function(recs){(recs||[]).forEach(function(rec){
-        if(!rec||!rec.course)return;
-        var h=hillOf(rec.course,rec.k,rec.hs,rec.ht);if(!h)return;
-        function ctx(name,nat,player){return{name:name,nat:nat,player:!!player,season:rec.season,phase:rec.phase,comp:rec.comp||'',date:rec.date||'',src:'Kariera'}}
-        (rec.rows||[]).forEach(function(x){if(x&&x.n&&x.j)jumps(x.j,function(d){addJump(h,d,ctx(x.n,x.c,false))})});
-        (rec.more||[]).forEach(function(m){if(m&&m[1]&&m[6])jumps(m[6],function(d){addJump(h,d,ctx(m[1],m[2],false))})});
-        (rec.teams||[]).forEach(function(t){(t.m||[]).forEach(function(z){if(z&&z[0]&&z[2])jumps(z[2],function(d){addJump(h,d,ctx(z[0],t.c,false))})})});
-      })})});
-    }).catch(function(e){console.warn('Rekordy skoczni:',e)});
-  }
-  return pp.then(function(){
-    /* rekordy treningowe gracza */
-    var tb={},pn='Ty';
-    try{tb=JSON.parse(localStorage.getItem('pssTrainBest')||'{}')||{}}catch(e){}
-    try{var pl=typeof loadPlayer==='function'?loadPlayer():null;if(pl&&pl.name)pn=pl.name}catch(e){}
-    Object.keys(tb).forEach(function(k){
-      var p=k.split('|'),f=catalogFind(p[0],+p[2]),h=hillOf(p[0],f?f.K:0,+p[2],p[1]);
-      addJump(h,Number(tb[k]),{name:pn,nat:'',player:true,season:0,phase:'',comp:'',date:'',src:'Trening'});
+}
+function myName(){var pn='Ty';try{var pl=typeof loadPlayer==='function'?loadPlayer():null;if(pl&&pl.name)pn=pl.name}catch(e){}return pn}
+
+/* --- rekordy lokalne: tylko skoki oddane ręcznie przez gracza w tej przeglądarce --- */
+function collectLocal(){
+  var H=Object.create(null),hillOf=hillMaker(H),pn=myName();
+  [['pssTrainBest','Trening'],['pssCompBest','Konkurs (własny skok)']].forEach(function(x){
+    var b=lsJson(x[0]);
+    Object.keys(b).forEach(function(k){
+      var p=k.split('|'),f=catalogFind(p[0],+p[2]),h=hillOf(p[0],f?f.K:0,+p[2],p[1]),d=Number(b[k]);
+      if(h&&d>0&&(!h.l||d>h.l.d))h.l={d:d,name:pn,nat:'',player:true,season:0,phase:'',comp:'',date:'',src:x[1]};
     });
-    /* własne skoki w konkursach kariery (oddane ręcznie, nie symulowane) */
-    var cb={};try{cb=JSON.parse(localStorage.getItem('pssCompBest')||'{}')||{}}catch(e){}
-    Object.keys(cb).forEach(function(k){
-      var p=k.split('|'),f=catalogFind(p[0],+p[2]),h=hillOf(p[0],f?f.K:0,+p[2],p[1]);
-      addJump(h,Number(cb[k]),{name:pn,nat:'',player:true,season:0,phase:'',comp:'',date:'',src:'Konkurs (własny skok)'});
-    });
-    return H;
   });
+  return Promise.resolve(H);
 }
 function load(force){
   if(!force&&cache&&Date.now()-cache.t<15000)return Promise.resolve(cache.H);
   if(loading)return loading;
-  loading=collect().then(function(H){cache={t:Date.now(),H:H};loading=null;return H},function(e){loading=null;throw e});
+  loading=collectLocal().then(function(H){cache={t:Date.now(),H:H};loading=null;return H},function(e){loading=null;throw e});
   return loading;
+}
+
+/* --- rekordy globalne: wyłącznie z serwera, czyli od zalogowanych graczy (żadnych NPC) --- */
+function fetchServer(){
+  var C=cloud();if(!C)return Promise.reject({code:'NOCFG'});
+  if(!C.session())return Promise.reject({code:'NOLOGIN'});
+  return (C.session()?C.getToken().catch(function(){return null}):Promise.resolve(null)).then(function(tok){
+    return C.post(C.FS+':runQuery',{structuredQuery:{from:[{collectionId:'hillRecords'}]}},tok);
+  }).then(function(res){
+    return (res||[]).filter(function(x){return x.document}).map(function(x){
+      var f=x.document.fields||{};
+      function s(k){return f[k]&&f[k].stringValue||''}
+      function n(k){var v=f[k];return v?(v.doubleValue!=null?Number(v.doubleValue):v.integerValue!=null?Number(v.integerValue):0)||0:0}
+      return{id:x.document.name.split('/').pop(),uid:s('uid'),nick:s('name')||s('acc'),hill:s('hill'),hs:n('hs'),type:s('type'),dm:Math.round(n('dist')*10),upd:n('updatedAt')};
+    });
+  });
+}
+/* najlepsze skoki tego gracza (trening + konkursy), dm = dziesiąte części metra; id dokumentu = nazwa_hs */
+function mineBest(){
+  var out={};
+  [lsJson('pssTrainBest'),lsJson('pssCompBest')].forEach(function(b){
+    Object.keys(b).forEach(function(k){
+      var p=k.split('|'),hs=Math.round(+p[2]),dm=Math.round(Number(b[k])*10);
+      if(!p[0]||!(hs>0&&hs<300)||!(dm>0&&dm<=3000))return;
+      var id=norm(p[0]).replace(/ /g,'_')+'_'+hs,o=out[id];
+      if(!o||dm>o.dm)out[id]={id:id,hill:p[0],hs:hs,type:String(p[1]||''),dm:dm};
+    });
+  });
+  return out;
+}
+/* wysyła na serwer te rekordy zalogowanego gracza, które przebijają rekord globalny (reguły Firestore i tak nie pozwalają obniżyć rekordu) */
+var pubBusy=null,pubRaw='',pubNext=0;
+function syncMine(){
+  var C=cloud(),S=C&&C.session&&C.session();
+  if(!C||!S||!S.username)return Promise.resolve();
+  if(pubBusy)return pubBusy;
+  var raw;try{raw=S.uid+'|'+(localStorage.getItem('pssTrainBest')||'')+'|'+(localStorage.getItem('pssCompBest')||'')}catch(e){return Promise.resolve()}
+  if(raw===pubRaw||Date.now()<pubNext)return Promise.resolve();
+  var mine=mineBest(),ids=Object.keys(mine);
+  if(!ids.length){pubRaw=raw;return Promise.resolve()}
+  pubBusy=fetchServer().then(function(rows){
+    var have={};rows.forEach(function(r){have[r.id]=r.dm});
+    var todo=ids.filter(function(id){return !(have[id]>=mine[id].dm)});
+    if(!todo.length)return;
+    return C.getToken().then(function(tok){
+      return todo.reduce(function(p,id){return p.then(function(){
+        var m=mine[id];
+        return C.api(C.FS+'/hillRecords/'+id,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
+          body:JSON.stringify({fields:{uid:C.str(S.uid),acc:C.str(S.username),name:C.str(S.username),hill:C.str(m.hill),hs:C.int(m.hs),type:C.str(m.type),dist:{doubleValue:m.dm/10},updatedAt:C.int(Date.now())}})});
+      })},Promise.resolve());
+    });
+  }).then(function(){pubRaw=raw;pubNext=0},function(e){pubNext=Date.now()+120000;console.warn('Rekordy globalne: nie wysłano rekordów',e&&e.code||e)}).then(function(){pubBusy=null});
+  return pubBusy;
+}
+function collectGlobal(){
+  var H=Object.create(null),hillOf=hillMaker(H),C=cloud(),own=C&&C.session&&C.session(),ownUid=own&&own.uid||'';
+  return syncMine().then(fetchServer).then(function(rows){
+    rows.forEach(function(r){
+      if(!r.hill||!(r.dm>0))return;
+      var f=catalogFind(r.hill,r.hs),h=hillOf(r.hill,f?f.K:0,r.hs,r.type),d=r.dm/10;
+      if(h&&(!h.g||d>h.g.d))h.g={d:d,name:r.nick||'?',nat:'',player:!!ownUid&&r.uid===ownUid,season:0,phase:'',comp:'',date:r.upd,src:'Gracz'};
+    });
+    return H;
+  });
 }
 
 /* ---------- interfejs ---------- */
@@ -54491,7 +54602,7 @@ function build(){
   var r=document.createElement('div');r.id='pssRec';r.hidden=true;r.tabIndex=-1;r.setAttribute('role','dialog');r.setAttribute('aria-label','Rekordy skoczni');
   r.innerHTML='<div class="rc-box"><div class="rc-head"><button type="button" class="rc-btn" id="rcBack" hidden>← WRÓĆ</button><div class="rc-title" id="rcTitle">REKORDY</div><button type="button" class="rc-btn rc-x" id="rcClose">ZAMKNIJ ✕</button></div>'
    +'<div class="rc-choose" id="rcChoose"><button type="button" class="rc-big" data-m="local"><b>🥇 REKORDY LOKALNE</b><span>Twoje rekordy na skoczniach: najdłuższe skoki, które oddałeś w karierze i na treningu.</span></button>'
-   +'<button type="button" class="rc-big" data-m="global"><b>🌍 REKORDY GLOBALNE</b><span>Na każdej skoczni tylko jeden, najdłuższy skok spośród wszystkich zawodników zapisanych w archiwum gry.</span></button></div>'
+   +'<button type="button" class="rc-big" data-m="global"><b>🌍 REKORDY GLOBALNE</b><span>Na każdej skoczni tylko jeden, najdłuższy skok spośród wszystkich zalogowanych graczy.</span></button></div>'
    +'<div id="rcView" hidden><div class="rc-tools"><input class="rc-in" id="rcQ" type="search" placeholder="Szukaj miejscowości…" autocomplete="off" aria-label="Szukaj skoczni">'
    +'<select class="rc-in" id="rcCountry" aria-label="Kraj"></select>'
    +'<select class="rc-in" id="rcSize" aria-label="Wielkość skoczni"><option value="">Wszystkie wielkości</option><option value="small">Małe</option><option value="normal">Normalne</option><option value="large">Duże</option><option value="fly">Mamucie</option></select>'
@@ -54514,10 +54625,20 @@ function showChoose(){
   mode='choose';D.title.textContent='REKORDY SKOCZNI';D.back.hidden=true;D.choose.hidden=false;D.view.hidden=true;
 }
 var DATA=null;
+function errHtml(e){
+  var st=e&&e.status,c=String(e&&e.code||'');
+  if(c==='NOLOGIN')return'<div class="rc-empty">Zaloguj się na konto, aby zobaczyć rekordy globalne.</div>';
+  if(c==='NOCFG')return'<div class="rc-empty">Rekordy globalne wymagają połączenia z serwerem kont, które nie jest skonfigurowane.</div>';
+  if(st===403||/PERMISSION/.test(c)){
+    var el=document.getElementById('pss-finished-careers-rules'),href=el?'data:text/plain;charset=utf-8,'+encodeURIComponent(el.textContent):'';
+    return'<div class="rc-empty">Serwer odrzucił zapytanie – właściciel gry musi dodać reguły dla kolekcji „hillRecords” w Firestore (są w pliku z regułami).'+(href?'<br><a style="color:#ffd36b" download="Archiwum_Firestore.rules" href="'+href+'">Pobierz reguły dla właściciela gry</a>':'')+'</div>';
+  }
+  return'<div class="rc-empty">Nie udało się wczytać rekordów globalnych. Sprawdź połączenie z internetem i spróbuj ponownie.</div>';
+}
 function showList(m){
-  mode=m;D.title.textContent=m==='local'?'REKORDY LOKALNE':'REKORDY GLOBALNE';D.back.hidden=false;D.choose.hidden=true;D.view.hidden=false;
-  D.info.textContent='';D.wrap.innerHTML='<div class="rc-empty">Wczytywanie archiwum wyników…</div>';
-  load(true).then(function(H){DATA=H;fillCountries();render()},function(){D.wrap.innerHTML='<div class="rc-empty">Nie udało się wczytać archiwum wyników.</div>'});
+  mode=m;DATA=null;D.title.textContent=m==='local'?'REKORDY LOKALNE':'REKORDY GLOBALNE';D.back.hidden=false;D.choose.hidden=true;D.view.hidden=false;
+  D.info.textContent='';D.wrap.innerHTML='<div class="rc-empty">'+(m==='local'?'Wczytywanie rekordów…':'Wczytywanie rekordów graczy…')+'</div>';
+  (m==='local'?load(true):collectGlobal()).then(function(H){if(mode!==m)return;DATA=H;fillCountries();render()},function(e){if(mode!==m)return;D.wrap.innerHTML=m==='local'?'<div class="rc-empty">Nie udało się wczytać rekordów.</div>':errHtml(e)});
 }
 function pool(){
   var out=[];Object.keys(DATA||{}).forEach(function(k){var h=DATA[k],rec=mode==='local'?h.l:h.g;if(rec)out.push({h:h,r:rec})});return out;
@@ -54529,7 +54650,8 @@ function fillCountries(){
   if(list.indexOf(F.country)<0)F.country='';D.country.value=F.country;
 }
 function when(r){
-  if(r.src==='Trening')return'Trening';
+  if(r.src==='Gracz')return r.date?'Zapisano '+new Date(r.date).toLocaleDateString('pl-PL'):'—';
+  if(!r.season)return esc(r.src||'—');
   return'Sezon '+r.season+(r.phase==='summer'?' (lato)':'')+(r.comp?' · '+esc(r.comp):'');
 }
 function render(){
@@ -54544,12 +54666,12 @@ function render(){
     if(F.sort==='hs')return b.h.hs-a.h.hs||a.h.name.localeCompare(b.h.name,'pl');
     return b.r.d-a.r.d;
   });
-  var total=pool().length;
+  var total=pool().length,C=cloud(),S=C&&C.session&&C.session(),hint=(mode==='global'&&!(S&&S.username))?' Zaloguj się na konto, aby Twoje rekordy trafiały do tej tabeli.':'';
   D.info.textContent=mode==='local'
-    ?'Twoje najdłuższe skoki na każdej skoczni (kariera i trening). Wyświetlono '+rows.length+' z '+total+' skoczni.'
-    :'Na każdej skoczni widoczny jest wyłącznie najdłuższy skok spośród wszystkich zawodników w archiwum gry (razem z Twoimi). Wyświetlono '+rows.length+' z '+total+' skoczni.';
+    ?'Twoje najdłuższe skoki na każdej skoczni (trening i własne skoki w konkursach). Wyświetlono '+rows.length+' z '+total+' skoczni.'
+    :'Na każdej skoczni widoczny jest wyłącznie najdłuższy skok spośród zalogowanych graczy (zawodnicy NPC się nie liczą). Wyświetlono '+rows.length+' z '+total+' skoczni.'+hint;
   if(!rows.length){
-    D.wrap.innerHTML='<div class="rc-empty">'+(total?'Brak skoczni pasujących do wybranych filtrów.':(mode==='local'?'Nie masz jeszcze żadnych rekordów. Rozegraj konkurs w karierze albo skocz na treningu.':'Archiwum nie zawiera jeszcze żadnych skoków. Rozegraj konkurs w karierze.'))+'</div>';
+    D.wrap.innerHTML='<div class="rc-empty">'+(total?'Brak skoczni pasujących do wybranych filtrów.':(mode==='local'?'Nie masz jeszcze żadnych rekordów. Skocz na treningu albo oddaj skok w konkursie.':'Żaden zalogowany gracz nie ustanowił jeszcze rekordu skoczni. Zaloguj się i skocz na treningu albo w konkursie.'))+'</div>';
     return;
   }
   var head=mode==='local'
@@ -54596,11 +54718,12 @@ function ensureCareer(){
 function ensure(){ensureHero();ensureCareer()}
 function init(){
   ensure();[300,900,2000,4000].forEach(function(ms){setTimeout(ensure,ms)});
+  setTimeout(function(){syncMine()},5000);setInterval(function(){syncMine()},20000);
   if(window.MutationObserver){
     var t=0;new MutationObserver(function(){if(t)return;t=setTimeout(function(){t=0;ensure()},120)}).observe(document.body,{childList:true,subtree:true});
   }
 }
-window.PSS_HILL_RECORDS={open:open,close:close,refresh:function(){cache=null},data:function(){return load(true)}};
+window.PSS_HILL_RECORDS={open:open,close:close,refresh:function(){cache=null},data:function(){return load(true)},sync:syncMine,global:collectGlobal};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
