@@ -1864,6 +1864,37 @@ html body .pss-ss-card.oly-live .pss-ss-table thead th{background:#0a3342!import
 .adv-back:hover{background:#fff2}
 @media(max-width:700px){#advWrap .adv-btn{padding:10px 36px;font-size:.88rem;letter-spacing:.04em}.adv-deco.l{right:auto;left:8px;margin:0}.adv-deco.r{left:auto;right:8px;margin:0}.adv-deco svg{width:22px}.adv-deco.l svg:first-child{display:none}.adv-deco.r svg:not(:first-child){display:none}}
 @media(prefers-reduced-motion:reduce){.adv-bell{animation:none}}
+.adv-screen{background:radial-gradient(ellipse at 50% 0%,#14395a 0%,#0a1f33 55%,#06121e 100%);overflow:auto;-webkit-overflow-scrolling:touch}
+.adv-screen.show{flex-direction:column;align-items:center;justify-content:flex-start;padding:64px 16px 24px;gap:6px}
+.adv-screen .adv-title{margin:0;font-size:clamp(1.3rem,3.6vw,2.4rem);font-weight:900;letter-spacing:.14em;color:#ffd36b;text-shadow:0 2px 12px #000a;z-index:2;position:relative}
+.adv-screen p.adv-sub{font-size:clamp(.8rem,1.6vw,1rem);font-weight:700;opacity:.8;letter-spacing:.06em;z-index:2;position:relative;margin-bottom:6px}
+.adv-grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(8px,1.4vw,16px);width:min(1100px,100%,calc((100vh - 170px)*1.5));margin:6px auto 0}
+.adv-gift{position:relative;aspect-ratio:1;border:0;padding:0;background:none;cursor:pointer;color:inherit;font:inherit;animation:advFloat 4.2s ease-in-out infinite;animation-delay:calc(var(--i)*-.37s);transition:transform .2s ease,filter .2s ease;-webkit-tap-highlight-color:transparent}
+.adv-gift:hover,.adv-gift:focus-visible{transform:translateY(-6px) scale(1.07) rotate(-2deg);filter:brightness(1.1) drop-shadow(0 8px 12px #000a);outline:none;z-index:3}
+.adv-gift .adv-svg{display:block;width:100%;height:100%}
+.adv-gift svg{width:100%;height:100%;display:block;overflow:visible}
+.adv-num{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);min-width:34%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#e8b92f 70%,#b88a14);color:#5a1010;font-weight:900;font-size:clamp(.95rem,2.6vw,1.9rem);line-height:1;border:2px solid #fff;box-shadow:0 3px 8px #0009;pointer-events:none}
+.adv-gift.shake{animation:advShake .5s ease}
+.adv-msg{position:relative;z-index:2;min-height:1.6em;margin-top:10px;font-weight:800;font-size:clamp(.9rem,1.8vw,1.15rem);color:#ffe9a8}
+.adv-snow{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.adv-snow i{position:absolute;top:-10px;border-radius:50%;background:#fff;opacity:.8;animation:advFall linear infinite}
+@keyframes advFloat{0%,100%{translate:0 0}50%{translate:0 -4px}}
+@keyframes advShake{0%,100%{rotate:0deg}20%{rotate:-9deg}40%{rotate:8deg}60%{rotate:-6deg}80%{rotate:4deg}}
+@keyframes advFall{to{transform:translateY(110vh) translateX(30px)}}
+@media(max-width:900px){.adv-grid{grid-template-columns:repeat(4,1fr);width:min(560px,100%)}}
+@media(max-width:420px){.adv-grid{grid-template-columns:repeat(3,1fr)}}
+@media(prefers-reduced-motion:reduce){.adv-gift,.adv-gift.shake{animation:none}.adv-snow{display:none}}
+/* prezenty na cały ekran */
+.adv-screen.show{padding:10px 10px 8px;gap:2px;height:100vh;height:100dvh;overflow:hidden;align-items:stretch}
+.adv-screen .adv-title{font-size:clamp(1.1rem,2.8vw,2rem);text-align:center;margin-top:2px}
+.adv-screen p.adv-sub{margin:0 0 2px;font-size:clamp(.72rem,1.3vw,.9rem)}
+.adv-grid{flex:1 1 auto;min-height:0;width:100%!important;margin:4px 0 0!important;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(4,minmax(0,1fr));gap:clamp(2px,.8vw,10px)}
+.adv-gift{aspect-ratio:auto!important;width:100%;height:100%;min-height:0;min-width:0}
+.adv-gift .adv-svg,.adv-gift svg{width:100%;height:100%}
+.adv-num{min-width:0;height:30%;max-height:30%;aspect-ratio:1;font-size:clamp(1rem,min(3.4vw,5.2vh),2.8rem)}
+.adv-msg{margin-top:2px;min-height:1.3em}
+@media(max-width:900px){.adv-grid{grid-template-columns:repeat(4,1fr)!important;grid-template-rows:repeat(6,minmax(0,1fr))}.adv-num{font-size:clamp(.9rem,min(5vw,3.4vh),1.8rem)}}
+@media(max-width:420px){.adv-grid{grid-template-columns:repeat(3,1fr)!important;grid-template-rows:repeat(8,minmax(0,1fr))}}
 </style></head>
 <body>
   <main class="game-screen">
@@ -54020,6 +54051,39 @@ var D={},built=false,openF=false,mode='menu';
 var R=null,G=null,hill=null,summer=false,comp=null,st=null,raf=0,lastT=0,tok=0,typeF='all',resAt=0;
 var keys={l:0,r:0},ptr=null,steerPtr=null,flashTO=0;
 var best={};try{best=JSON.parse(localStorage.getItem('pssTrainBest')||'{}')||{}}catch(e){}
+/* ---------- wygląd (kolory) i zapis powtórek rekordów ---------- */
+var gearC=null,RPL=null,lookView=null;
+function lsGet(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function trainLook(){var o=lsGet('pssTrainLook',null);if(!o||typeof o!=='object')return{suit:0,ski:0,look:{}};return{suit:Math.max(0,o.suit|0),ski:Math.max(0,o.ski|0),look:(o.look&&typeof o.look==='object')?o.look:{}}}
+function careerP(){return lsGet('polskiSkoczekCurrentPlayer',null)}
+/* strój aktualnego skoczka: w konkursie kariery — z zapisu kariery (kupiony i przemalowany sprzęt), w treningu — własny wygląd treningowy */
+function curGear(){
+  var G=window.PSS_GEAR;if(!G||!G.viewerFrom)return null;
+  try{
+    if(comp){var p=careerP();return p?G.viewerFrom(p):null}
+    var t=trainLook();return G.viewerFrom({gear:{suit:t.suit,ski:t.ski,look:t.look}});
+  }catch(e){return null}
+}
+function gearArr(g){if(!g)return null;var h=g.helm||{},k=g.ski||{};return[g.suit||'',k.color||'',k.id||'',h.color||'',h.accent||'',h.pattern||'none']}
+function gearFromArr(a){if(!Array.isArray(a)||a.length<6)return null;return{suit:a[0]||'#d7263d',ski:{id:a[2]||'',color:a[1]||'#ffd400'},helm:{color:a[3]||'#ffffff',accent:a[4]||'#d7263d',pattern:a[5]||'none'}}}
+/* zapis jednego skoku tak, aby dało się go odtworzyć: skocznia, ziarno, odległość, wiatr, próbki postawy w locie (co 0,1 s), strój */
+function replayOf(h,Dd,s,su){
+  return{v:1,h:[h.name,h.K,h.HS,h.type],su:su?1:0,sd:s.seed,d:Dd,dr:Math.round((s.dr!=null?s.dr:s.D)*100)/100,
+    w:Math.round((Number(s.wind)||0)*10)/10,nt:(s.noTele||s.nt)?1:0,p:(s.pl||s.p||[]).slice(0,160),
+    g:gearArr(s.gear!==undefined?s.gear:gearC),n:s.nat||'POL'};
+}
+function saveReplay(key,rep){
+  var m=lsGet('pssRecReplay',{});if(!m||typeof m!=='object')m={};
+  if(!m[key]||rep.d>m[key].d){m[key]=rep;lsSet('pssRecReplay',m)}
+}
+function syncRecords(){
+  try{
+    var R_=window.PSS_HILL_RECORDS;
+    if(R_&&R_.refresh)R_.refresh();
+    if(R_&&R_.sync)setTimeout(function(){R_.sync()},400);
+  }catch(e){}
+}
 var VIEWS=[['side','BOK'],['rear','TYŁ'],['pov','POV'],['front','PRZÓD'],['high','GÓRA'],['stand','TRYBUNY'],['tv','TRANSMISJA'],['profile','PROFIL']],trView='side';
 try{var _v=localStorage.getItem('pssTrainView');if(VIEWS.some(function(x){return x[0]===_v}))trView=_v}catch(e){}
 function paintViews(){if(!D.views)return;[].forEach.call(D.views.children,function(b){b.classList.toggle('on',b.getAttribute('data-v')===trView)})}
@@ -54076,13 +54140,13 @@ var CSS='#pssTrain{position:fixed;inset:0;z-index:2147483200;background:#06101a;
 
 function buildUI(){
   if(built)return;built=true;
-  var s=document.createElement('style');s.id='pssTrainCss';s.textContent=CSS;document.head.appendChild(s);
+  var s=document.createElement('style');s.id='pssTrainCss';s.textContent=CSS+CSS2;document.head.appendChild(s);
   var r=document.createElement('div');r.id='pssTrain';r.hidden=true;r.tabIndex=-1;r.setAttribute('role','dialog');r.setAttribute('aria-label','Trening skoków');
   r.innerHTML=
    '<div id="trMenu"><div class="tr-head"><div class="tr-title">TRENING</div><div class="tr-sub">Wybierz skocznię, na której chcesz trenować oddawanie skoków.</div><button type="button" class="tr-btn tr-x" id="trExit">WYJDŹ DO GRY ✕</button></div>'
    +'<div class="tr-tools"><input id="trSearch" type="search" placeholder="Szukaj skoczni…" autocomplete="off" aria-label="Szukaj skoczni">'
    +'<button type="button" class="tr-btn on" data-t="all">WSZYSTKIE</button><button type="button" class="tr-btn" data-t="normal">NORMALNE</button><button type="button" class="tr-btn" data-t="large">DUŻE</button><button type="button" class="tr-btn" data-t="fly">MAMUCIE</button>'
-   +'<select id="trSeason" aria-label="Pora roku"><option value="winter">❄ Zima</option><option value="summer">☀ Lato (igielit)</option></select></div>'
+   +'<select id="trSeason" aria-label="Pora roku"><option value="winter">❄ Zima</option><option value="summer">☀ Lato (igielit)</option></select><button type="button" class="tr-btn" id="trLookBtn" title="Kolory kombinezonu, nart i kasku">🎨 WYGLĄD</button></div>'
    +'<div id="trList"></div></div>'
    +'<div id="trGame" hidden><div id="trStage"></div><div id="trLoad">Ładowanie skoczni…</div>'
    +'<div class="tr-top"><div id="trInfo"></div><div id="trStats"><div><small>PRĘDKOŚĆ</small><b id="trSpd">—</b></div><div><small>WIATR</small><b id="trWnd">—</b></div></div><button type="button" class="tr-btn" id="trPause">MENU ☰</button></div>'
@@ -54094,11 +54158,12 @@ function buildUI(){
   D.spd=r.querySelector('#trSpd');D.wnd=r.querySelector('#trWnd');D.flash=r.querySelector('#trFlash');D.bar=r.querySelector('#trBar');D.barM=r.querySelector('#trBarM');
   D.barL=r.querySelector('#trBarLbl');D.bal=r.querySelector('#trBal');D.balM=r.querySelector('#trBalM');D.balL=r.querySelector('#trBalLbl');D.balZ=r.querySelector('#trBalZ');D.views=r.querySelector('#trViews');D.prompt=r.querySelector('#trPrompt');D.res=r.querySelector('#trRes');
   r.querySelector('#trExit').onclick=close;
-  r.querySelector('#trPause').onclick=function(){pauseMenu()};
+  r.querySelector('#trPause').onclick=function(){if(mode==='replay'){close();return}pauseMenu()};
   D.views.innerHTML=VIEWS.map(function(x,i){return '<button type="button" data-v="'+x[0]+'" title="Perspektywa (klawisz '+(i+1)+')">'+x[1]+'</button>'}).join('');
   D.views.onclick=function(e){var b=e.target.closest('button[data-v]');if(b)setView(b.getAttribute('data-v'))};paintViews();
   D.search.oninput=renderList;
   D.season.onchange=function(){summer=D.season.value==='summer'};
+  var _lb=r.querySelector('#trLookBtn');if(_lb)_lb.onclick=openLook;
   [].forEach.call(r.querySelectorAll('.tr-tools .tr-btn[data-t]'),function(b){b.onclick=function(){
     typeF=b.getAttribute('data-t');[].forEach.call(r.querySelectorAll('.tr-tools .tr-btn[data-t]'),function(x){x.classList.toggle('on',x===b)});renderList()}});
   D.list.onclick=function(e){var c=e.target.closest('.tr-card');if(!c)return;var h=cat()[+c.getAttribute('data-i')];if(h)pickHill(h)};
@@ -54123,6 +54188,7 @@ function buildUI(){
   /* sterowanie: klawiatura */
   window.addEventListener('keydown',function(e){
     if(!openF)return;var k=e.key,tg=e.target&&e.target.tagName;
+    if(lookOpen()){if(k==='Escape'){e.preventDefault();e.stopPropagation();closeLook()}return}
     if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA'){if(k==='Escape'&&mode==='menu'){e.preventDefault();close()}return}
     var h=true;
     if(mode==='play'){
@@ -54134,7 +54200,7 @@ function buildUI(){
       else if(k==='Escape'){if(comp&&st&&st.shown){}else if(D.res.hidden)pauseMenu();else D.res.hidden=true}
       else if((k==='r'||k==='R')&&!D.res.hidden&&performance.now()-resAt>500)again();
       else h=false;
-    }else if(k==='Escape')close();else h=false;
+    }else if(mode==='replay'){if(k===' '||k==='Enter'){if(RPL){RPL.paused=!RPL.paused;rpSync()}}else if(k==='c'||k==='C')cycleView();else if(k>='1'&&k<='8')setView(VIEWS[+k-1][0]);else if(k==='r'||k==='R')rpRestart();else if(k==='Escape')close();else h=false}else if(k==='Escape')close();else h=false;
     if(h){e.preventDefault();e.stopPropagation()}
   },true);
   window.addEventListener('keyup',function(e){var k=e.key;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=0;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=0},true);
@@ -54190,6 +54256,7 @@ function fail(msg){D.load.style.display='flex';D.load.innerHTML=esc(msg)+'<br><b
 function newJump(){
   var seed=Math.floor(Math.random()*900000)+1,j=jv(),J=j.buildJump(G,G.HS*.9,false,seed);
   var w=(Math.random()*3-1.5);
+  gearC=curGear();
   st={seed:seed,J:J,t:0,phase:'ready',D:null,eT:null,eL:null,q:0,pit:0,ideal:.45,D0:null,qS:0,tS:0,eS:0,lock:false,fallWhy:'',wind:w,gA:.12+Math.random()*.16+Math.abs(w)*.05,gB:(Math.random()<.5?-1:1)*(.04+Math.random()*.08),ph:[Math.random()*6.28,Math.random()*6.28],
       fallSet:false,fall:false,pressedLand:false,tPress:null,noTele:false,done:false,shown:false,kmh:J.vend/U3*3.6};
   if(R.setWind)R.setWind(Math.abs(w)*3);
@@ -54241,6 +54308,7 @@ function step(dt){
     if(steerPtr!=null)st.pit+=(steerPtr-st.pit)*(1-Math.exp(-dt*10));
     else{if(keys.r)st.pit+=1.5*dt;if(keys.l)st.pit-=1.5*dt;if(!keys.r&&!keys.l)st.pit*=Math.exp(-.1*dt)}
     st.pit=clamp(st.pit,-1,1);
+    if(!st.pl)st.pl=[];var _pk=Math.floor(Math.max(0,t-J.tTake)/.1);while(st.pl.length<=_pk&&st.pl.length<160)st.pl.push(Math.round(st.pit*100));
     var gust=st.gA*(Math.sin(1.9*t+st.ph[0])*.6+Math.sin(3.4*t+st.ph[1])*.4)+st.gB;
     st.ideal=clamp(.45*(1-u)-.2*u*u+gust,-.8,.8);
     var err=st.pit-st.ideal,fq=Math.exp(-Math.pow(err/.34,2));
@@ -54282,7 +54350,7 @@ function showResult(){
   var sorted=notes.map(function(v,k){return{v:v,k:k}}).sort(function(a,b){return a.v-b.v}),cut={};cut[sorted[0].k]=1;cut[sorted[4].k]=1;
   var style=sorted[1].v+sorted[2].v+sorted[3].v,dp=Math.max(0,base+(Dd-K)*coef),total=Math.max(0,dp+style);
   var key=hkey(hill),rec=best[key]!=null&&Dd>best[key]&&!st.fall;
-  if(!st.fall&&(best[key]==null||Dd>best[key])){best[key]=Dd;try{localStorage.setItem('pssTrainBest',JSON.stringify(best))}catch(e){}}
+  if(!st.fall&&(best[key]==null||Dd>best[key])){best[key]=Dd;try{localStorage.setItem('pssTrainBest',JSON.stringify(best))}catch(e){}try{saveReplay(key,replayOf(hill,Dd,st,summer))}catch(e){console.warn('Zapis powtórki:',e)}syncRecords()}
   var tk=ae<.06?'idealne':ae<.15?'bardzo dobre':ae<.3?'dobre':(st.eT<0?'za wcześnie':'za późno');
   var me=st.eS/Math.max(.1,st.tS),fl=(Q>=.8?'optymalny':Q>=.6?'dobry':Q>=.4?'chwiejny':'słaby')+(me>.18?' (zbyt agresywnie)':me<-.18?' (zbyt pasywnie)':'');
   var ld=st.fall?'upadek ('+st.fallWhy+')':st.noTele?'bez telemarku':'telemark';
@@ -54297,6 +54365,7 @@ function showResult(){
    +'<div class="tr-acts"><button type="button" class="tr-btn tr-go" id="trAgain">SKOCZ JESZCZE RAZ</button><button type="button" class="tr-btn" id="trChange">ZMIEŃ SKOCZNIĘ</button><button type="button" class="tr-btn tr-x" id="trLeave">WYJDŹ DO EKRANU GRY</button></div>';
   D.res.hidden=false;resAt=performance.now();
   D.res.querySelector('#trAgain').onclick=again;D.res.querySelector('#trChange').onclick=showMenu;D.res.querySelector('#trLeave').onclick=close;
+  try{var _lb2=document.createElement('button');_lb2.type='button';_lb2.className='tr-btn';_lb2.textContent='🎨 ZMIEŃ WYGLĄD';_lb2.onclick=openLook;var _ac=D.res.querySelector('.tr-acts');if(_ac)_ac.insertBefore(_lb2,D.res.querySelector('#trChange'))}catch(e){}
 }
 function again(){if(comp||mode!=='play'||!R)return;newJump()}
 function pauseMenu(){
@@ -54311,13 +54380,14 @@ function pauseMenu(){
 function frame(now){
   raf=requestAnimationFrame(frame);
   var dt=Math.min(.05,(now-lastT)/1000||.016);lastT=now;
+  if(openF&&mode==='replay'){if(R&&RPL)try{frameReplay(dt)}catch(e){console.warn(e)}return}
   if(!openF||mode!=='play'||!R||!st)return;
   var paused=!D.res.hidden&&!st.shown;
   if(!paused)try{step(dt)}catch(e){console.warn('Trening (krok):',e)}
   var J=st.J,t=st.t,pl=jv().place(J,t);
   if(st.noTele&&pl.phase==='slide'&&pl.pose)pl.pose=Object.assign({},pl.pose,{tele:0});
   if(st.phase==='fly'){var f=sm((t-J.tTake)/.35)*(1-sm((t-(J.tLand-.9))/.6));if(f>.001&&pl.pose){pl.rot=(pl.rot||0)+st.pit*.2*f;pl.pose=Object.assign({},pl.pose,{ta:pl.pose.ta+st.pit*.32*f})}}
-  try{R.render({nat:'POL',t:t,dt:dt,view:trView,pl:pl,J:J,lat:0,roll:0,bib:(comp&&comp.hud&&comp.hud.bib)||null})}
+  try{R.render({nat:'POL',t:t,dt:dt,view:trView,pl:pl,J:J,lat:0,roll:0,bib:(comp&&comp.hud&&comp.hud.bib)||null,gear:gearC})}
   catch(e){console.warn('Trening (render):',e);R=null;fail('Błąd renderowania sceny 3D.')}
 }
 
@@ -54358,7 +54428,7 @@ function renderCompHud(){
     if(!fd){var pr=localStorage.getItem('polskiSkoczekCurrentPlayer');if(pr)fd=(JSON.parse(pr)||{}).face}
     if(fd&&window.PSS_FACE&&window.PSS_FACE.svg)faceH=window.PSS_FACE.svg(fd,{label:'Twarz zawodnika'});
   }catch(e){}
-  el.innerHTML='<div id="trCompCardW"><div id="trCompFace">'+faceH+'</div><div class="ch-card"><div class="ch-nm"><span>'+esc(nm)+'</span><span>'+flagH+'</span></div><div class="ch-sub">'+(h.round||1)+'. seria · nr '+(h.nr||1)+' / '+(h.total||1)+'</div></div></div>'
+  el.innerHTML='<div id="trCompCardW"><div id="trCompFace">'+faceH+'</div><div class="ch-card"><div class="ch-nm"><span>'+esc(nm)+'</span><span>'+flagH+'</span></div><div class="ch-sub">'+(h.label||((h.round||1)+'. seria'))+' · nr '+(h.nr||1)+' / '+(h.total||1)+'</div></div></div>'
    +'<aside id="jvBeat">'+windH+(tb!=null?'<small>To beat:</small><b>'+Number(tb).toFixed(1)+' m</b>':'')+(cu!=null?'<small>Awans od:</small><b>'+Number(cu).toFixed(1)+' m</b>':'')+'</aside>';
   var orig=document.getElementById('jvTvSkin');
   if(orig){
@@ -54372,7 +54442,7 @@ function showResultComp(){
   pen+=ae<.06?0:ae<.15?.5:ae<.3?1:2;pen+=Math.min(3,(1-Q)*3);pen+=st.fall?8:st.noTele?1.5:0;
   var Dd=Math.round(st.D*2)/2;
   if(st.fall)Dd=Math.round(Math.max(8,Dd*(.74+Math.random()*.08))*2)/2;
-  var jmp={dist:Dd,fall:!!st.fall,noTele:!!st.noTele,pen:pen,wind:st.wind,q:st.q,Q:Q};
+  var jmp={dist:Dd,fall:!!st.fall,noTele:!!st.noTele,pen:pen,wind:st.wind,q:st.q,Q:Q,seed:st.seed,dr:Math.round(st.D*100)/100,pl:(st.pl||[]).slice(0,160),su:summer?1:0,gear:gearC,nat:((careerP()||{}).nation)||'POL'};
   var c=comp;
   setTimeout(function(){
     if(comp!==c||c.finished)return;
@@ -54399,10 +54469,197 @@ function startComp(o){
   lastT=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);
   pickHill(h);return true;
 }
-function recordComp(course,dist){
+function recordComp(course,dist,jmp){
+  try{var h0=findHill(course);if(h0&&jmp&&dist>0&&!jmp.fall&&jmp.seed!=null){var k0=hkey(h0),cbo=lsGet('pssCompBest',{})||{},old=Math.max(Number(best[k0])||0,Number(cbo[k0])||0);if(dist>old)saveReplay(k0,replayOf(h0,dist,jmp,jmp.su))}}catch(e){console.warn('Zapis powtórki:',e)}
+  recordComp0(course,dist);syncRecords();
+}
+function recordComp0(course,dist){
   var h=findHill(course);if(!h||!(dist>0))return;
   var key=hkey(h),cb={};try{cb=JSON.parse(localStorage.getItem('pssCompBest')||'{}')||{}}catch(e){}
   if(cb[key]==null||dist>cb[key]){cb[key]=dist;try{localStorage.setItem('pssCompBest',JSON.stringify(cb))}catch(e){}}
+}
+
+/* ---------- edytor wyglądu w treningu (kolory kombinezonu, nart, kasku — jak w karierze) ---------- */
+var CSS2='#trLook{position:absolute;inset:0;z-index:60;background:rgba(3,8,14,.92);overflow:auto;padding:14px;display:flex;justify-content:center;align-items:flex-start;user-select:auto;-webkit-user-select:auto}'
++'#trLook .tl-box{width:min(900px,100%);background:#f4fafd;color:#27465a;border-radius:16px;padding:14px 16px;display:grid;gap:12px;box-shadow:0 14px 60px #000c;box-sizing:border-box}'
++'#trLook .tl-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}#trLook .tl-head b{flex:1;letter-spacing:.1em;font-size:1rem;min-width:200px}'
++'#trLook .tl-note{font-size:.8rem;line-height:1.4;color:#5f788a;font-weight:700}'
++'#trLook select{width:100%!important;padding:9px 10px!important;border:2px solid #c5dbe8!important;border-radius:10px!important;background:#fff!important;color:#18314f!important;font:800 .9rem system-ui,sans-serif!important;margin:0!important}'
++'#trLook .tl-foot{display:flex;gap:8px;flex-wrap:wrap}'
++'#trLook .look-prev3d{position:relative;top:0;border-radius:12px;overflow:hidden;height:clamp(260px,42vh,420px)}'
++'#trLook .look-row{display:grid;gap:10px;padding:12px 14px;border:1px solid #d5e5ee;border-radius:14px;background:#fff}'
++'#trLook input{box-sizing:border-box}'
++'#trRpBar{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);z-index:11;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:96vw}'
++'#trRpBar button{border:1px solid rgba(255,255,255,.3);background:rgba(8,16,24,.82);color:#fff;border-radius:9px;padding:7px 12px;font:inherit;font-weight:800;font-size:.74rem;letter-spacing:.05em;cursor:pointer}'
++'#trRpBar button:hover{background:rgba(47,127,193,.7)}#trRpBar button.on{background:#ffd36b;color:#2b1d00;border-color:#ffd36b}';
+function lookOpen(){return !!(D.root&&D.root.querySelector('#trLook'))}
+function closeLook(){
+  if(lookView){try{if(lookView.dispose)lookView.dispose()}catch(e){}lookView=null}
+  var e=D.root&&D.root.querySelector('#trLook');if(e)e.remove();
+  gearC=curGear();
+}
+function openLook(){
+  buildUI();
+  var G=window.PSS_GEAR,L=window.PSS_LOOK,L3=window.PSS_LOOK3D;
+  if(!G||!L||!L3){alert('Edytor wyglądu nie jest dostępny w tej wersji gry.');return}
+  closeLook();
+  var s0=trainLook(),suitI=Math.min(s0.suit,G.SUITS.length-1),skiI=Math.min(s0.ski,G.SKIS.length-1),look=L.sanitize(s0.look),DEF=L.DEFAULTS,pickers={},view=null;
+  var SW=['#d7263d','#ff7a00','#ffd400','#8fd81a','#1faa59','#00afca','#2a6fdb','#1d3557','#6a2fb5','#c2185b','#ffffff','#c3c9d0','#161616','#5b3421'];
+  var el=document.createElement('div');el.id='trLook';
+  function sw(key){return SW.map(function(c){return'<button type="button" class="look-sw" style="background:'+c+'" data-look-sw="'+key+'" data-color="'+c+'" aria-label="'+c+'"></button>'}).join('')}
+  function ctl(key,def,label){
+    var cur=look[key]||def;
+    return'<div class="look-ctl"><div class="look-ctl-bar"><button type="button" class="look-chip" data-look-toggle="'+key+'" aria-expanded="false"><span class="look-chip-sw" data-chip-sw="'+key+'" style="background:'+cur+'"></span><span class="look-chip-txt"><b>'+label+'</b><small data-chip-hex="'+key+'">'+cur.toUpperCase()+'</small></span><span class="look-chip-more">Wszystkie kolory ▾</span></button><div class="look-sws">'+sw(key)+'</div><button type="button" class="look-mini" data-look-reset="'+key+'">DOMYŚLNY</button></div><div class="look-picker" data-look-picker="'+key+'" hidden></div></div>';
+  }
+  el.innerHTML='<div class="tl-box"><div class="tl-head"><b>🎨 WYGLĄD SKOCZKA — TRENING</b><button type="button" class="look-mini" id="tlCareer">WCZYTAJ WYGLĄD Z KARIERY</button><button type="button" class="look-mini" id="tlClose">GOTOWE ✓</button></div>'
+   +'<div class="tl-note">Tak jak w karierze: kolor kombinezonu i nart zmienisz tylko przy darmowym kombinezonie klasycznym i nartach ze strychu (sprzęt z kolekcji ma stały kolor). Kask możesz przemalować i ozdobić wzorem zawsze. Zmiany widać od razu w skokach treningowych i w powtórkach rekordów.</div>'
+   +'<div class="look-prev look-prev3d" id="tlPrev"></div>'
+   +'<section class="look-row"><h4>KOMBINEZON</h4><select id="tlSuit" aria-label="Kombinezon"></select><div id="tlSuitCtl"></div></section>'
+   +'<section class="look-row"><h4>NARTY</h4><select id="tlSki" aria-label="Narty"></select><div id="tlSkiCtl"></div></section>'
+   +'<section class="look-row"><h4>KASK</h4><div id="tlHelm"></div><div class="look-sub">WZÓR NA KASKU</div><div class="look-pats" id="tlPats"></div><div class="look-sub">KOLOR WZORU</div><div id="tlAcc"></div></section>'
+   +'<div class="tl-foot"><button type="button" class="look-mini" id="tlReset">PRZYWRÓĆ WSZYSTKIE DOMYŚLNE</button></div></div>';
+  D.root.appendChild(el);
+  var selSuit=el.querySelector('#tlSuit'),selSki=el.querySelector('#tlSki');
+  selSuit.innerHTML=G.SUITS.map(function(it,i){return'<option value="'+i+'">'+esc(it.name)+' ('+esc(it.colorName)+')</option>'}).join('');
+  selSki.innerHTML=G.SKIS.map(function(it,i){return'<option value="'+i+'">'+esc(it.name)+' ('+esc(it.colorName)+')</option>'}).join('');
+  function viewObj(){var v=G.viewerFrom({gear:{suit:suitI,ski:skiI,look:look}});return{suit:v.suit,ski:v.ski,helm:v.helm}}
+  function save(){lsSet('pssTrainLook',{suit:suitI,ski:skiI,look:L.sanitize(look)});gearC=curGear()}
+  function changed(){if(view)view.update(viewObj());save()}
+  function thumbs(){var base=look.helm||DEF.helm,acc=look.accent||DEF.accent;[].forEach.call(el.querySelectorAll('canvas[data-pat-id]'),function(cv){L.drawThumb(cv,base,acc,cv.getAttribute('data-pat-id'))})}
+  function pats(){
+    el.querySelector('#tlPats').innerHTML=L.PATTERNS.map(function(p){return'<button type="button" class="look-pat'+(look.pattern===p.id?' sel':'')+'" data-look-pat="'+p.id+'" title="'+esc(p.name)+'"><canvas width="64" height="64" data-pat-id="'+p.id+'"></canvas><span>'+esc(p.name)+'</span></button>'}).join('');
+    thumbs();
+  }
+  function renderCtls(){
+    selSuit.value=String(suitI);selSki.value=String(skiI);
+    el.querySelector('#tlSuitCtl').innerHTML=suitI===0?ctl('suit',DEF.suit,'Kolor kombinezonu'):'<div class="look-lock">🔒 Ten kombinezon ma stały kolor. Wybierz „Klasyczny” (darmowy), aby zmienić jego kolor.</div>';
+    el.querySelector('#tlSkiCtl').innerHTML=skiI===0?ctl('ski',DEF.ski,'Kolor nart'):'<div class="look-lock">🔒 Te narty mają stały kolor. Wybierz „Narty ze strychu” (darmowe), aby zmienić ich kolor.</div>';
+    el.querySelector('#tlHelm').innerHTML=ctl('helm',DEF.helm,'Kolor kasku');
+    el.querySelector('#tlAcc').innerHTML=ctl('accent',DEF.accent,'Kolor wzoru');
+    pickers={};pats();
+  }
+  function touch(k){
+    var c=look[k]||DEF[k],cs=el.querySelector('[data-chip-sw="'+k+'"]'),ch=el.querySelector('[data-chip-hex="'+k+'"]');
+    if(cs)cs.style.background=c;if(ch)ch.textContent=c.toUpperCase();if(pickers[k])pickers[k].set(c);
+    if(k==='helm'||k==='accent')thumbs();changed();
+  }
+  selSuit.onchange=function(){suitI=+selSuit.value||0;renderCtls();changed()};
+  selSki.onchange=function(){skiI=+selSki.value||0;renderCtls();changed()};
+  el.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button');if(!b)return;var k;
+    if(b.id==='tlClose'){closeLook();return}
+    if(b.id==='tlCareer'){
+      var p=careerP();
+      if(!p||!p.gear){alert('Nie znaleziono zapisanej kariery z wyglądem skoczka.');return}
+      suitI=Math.min(Math.max(0,p.gear.suit|0),G.SUITS.length-1);skiI=Math.min(Math.max(0,p.gear.ski|0),G.SKIS.length-1);look=L.sanitize(p.gear.look);
+      renderCtls();changed();return;
+    }
+    if(b.id==='tlReset'){suitI=0;skiI=0;look=L.sanitize({});renderCtls();changed();return}
+    if(b.hasAttribute('data-look-toggle')){
+      k=b.getAttribute('data-look-toggle');var panel=el.querySelector('[data-look-picker="'+k+'"]');if(!panel)return;
+      if(!pickers[k]){(function(kk){pickers[kk]=L3.colorPicker(panel,look[kk]||DEF[kk],function(hex){look[kk]=hex;touch(kk)})})(k)}
+      panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return;
+    }
+    if(b.hasAttribute('data-look-sw')){k=b.getAttribute('data-look-sw');look[k]=b.getAttribute('data-color');touch(k);return}
+    if(b.hasAttribute('data-look-pat')){look.pattern=b.getAttribute('data-look-pat');[].forEach.call(el.querySelectorAll('.look-pat'),function(x){x.classList.toggle('sel',x===b)});changed();return}
+    if(b.hasAttribute('data-look-reset')){k=b.getAttribute('data-look-reset');look[k]=null;touch(k);return}
+  });
+  renderCtls();
+  try{view=lookView=L3.mount(el.querySelector('#tlPrev'),viewObj())}catch(err){console.warn('Podgląd 3D wyglądu:',err)}
+}
+
+/* ---------- powtórka rekordowego skoku (własnego albo innego gracza) ---------- */
+function pitAt(a,tt){
+  if(!a||!a.length)return 0;
+  var x=Math.max(0,tt)/.1,i=Math.floor(x),f=x-i;
+  if(i>=a.length-1)return clamp((a[a.length-1]||0)/100,-1,1);
+  return clamp(((a[i]||0)*(1-f)+(a[i+1]||0)*f)/100,-1,1);
+}
+function rpBar(){
+  var b=D.root.querySelector('#trRpBar');
+  if(!b){
+    b=document.createElement('div');b.id='trRpBar';
+    b.innerHTML='<button type="button" data-rp="restart">⏮ OD NOWA</button><button type="button" data-rp="pause">⏸ PAUZA</button>'
+      +'<button type="button" data-rp-speed="1">1×</button><button type="button" data-rp-speed=".5">0,5×</button><button type="button" data-rp-speed=".25">0,25×</button>';
+    b.onclick=function(e){
+      var x=e.target.closest&&e.target.closest('button');if(!x||!RPL)return;
+      if(x.getAttribute('data-rp')==='restart')rpRestart();
+      else if(x.getAttribute('data-rp')==='pause'){RPL.paused=!RPL.paused;rpSync()}
+      else if(x.hasAttribute('data-rp-speed')){RPL.speed=Number(x.getAttribute('data-rp-speed'))||1;rpSync()}
+    };
+    D.game.appendChild(b);
+  }
+  return b;
+}
+function rpSync(){
+  var b=D.root.querySelector('#trRpBar');if(!b||!RPL)return;
+  var p=b.querySelector('[data-rp="pause"]');if(p)p.textContent=RPL.paused?'▶ WZNÓW':'⏸ PAUZA';
+  [].forEach.call(b.querySelectorAll('[data-rp-speed]'),function(x){x.classList.toggle('on',Number(x.getAttribute('data-rp-speed'))===RPL.speed)});
+}
+function rpFail(msg){
+  D.load.style.display='flex';D.load.innerHTML=esc(msg)+'<br><br><button type="button" class="tr-btn" id="trBack">ZAMKNIJ</button>';
+  var b=D.load.querySelector('#trBack');if(b)b.onclick=close;
+}
+function rpRestart(){
+  var rp=RPL;if(!rp||!rp.J)return;
+  rp.t=Math.max(0,rp.J.tSit-.5);rp.hold=.6;rp.done=false;rp.paused=false;D.res.hidden=true;rpSync();
+}
+function rpEnd(){
+  var rp=RPL;if(!rp)return;rp.done=true;var rec=rp.rec;
+  D.res.innerHTML='<h2>'+esc(String(hill.name).toUpperCase())+' · K '+hill.K+' · HS '+hill.HS+'</h2><div class="tr-rec">REKORD SKOCZNI</div><div class="tr-dist">'+Number(rec.d).toFixed(1)+' m</div><div class="tr-pts">'+esc(rec.by||'')+'</div>'
+    +'<div class="tr-acts"><button type="button" class="tr-btn tr-go" id="trRpAgain">OBEJRZYJ PONOWNIE</button><button type="button" class="tr-btn tr-x" id="trRpClose">ZAMKNIJ</button></div>';
+  D.res.hidden=false;resAt=performance.now();
+  D.res.querySelector('#trRpAgain').onclick=rpRestart;D.res.querySelector('#trRpClose').onclick=close;
+}
+function frameReplay(dt){
+  var rp=RPL;if(!rp||!rp.J||!R)return;
+  var J=rp.J,rec=rp.rec;
+  if(!rp.paused){if(rp.hold>0)rp.hold-=dt;else rp.t=Math.min(J.tEnd,rp.t+dt*rp.speed)}
+  var t=rp.t,pl=jv().place(J,t);
+  if(rec.nt&&pl.phase==='slide'&&pl.pose)pl.pose=Object.assign({},pl.pose,{tele:0});
+  if(pl.phase==='fly'){
+    var pit=pitAt(rec.p,t-J.tTake),f=sm((t-J.tTake)/.35)*(1-sm((t-(J.tLand-.9))/.6));
+    if(f>.001&&pl.pose){pl.rot=(pl.rot||0)+pit*.2*f;pl.pose=Object.assign({},pl.pose,{ta:pl.pose.ta+pit*.32*f})}
+  }
+  if(!rp.done&&t>=Math.min(J.tLand+2.0,J.tEnd-.02))rpEnd();
+  try{R.render({nat:rec.n||'POL',t:t,dt:dt,view:trView,pl:pl,J:J,lat:0,roll:0,bib:null,gear:gearC})}
+  catch(e){console.warn('Powtórka (render):',e);R=null;rpFail('Błąd renderowania sceny 3D.')}
+}
+function startReplay(rec,opts){
+  if(openF||!rec||!Array.isArray(rec.h))return false;
+  var h=findHill([rec.h[0],rec.h[3],rec.h[1],rec.h[2]]);if(!h)return false;
+  buildUI();
+  comp=null;openF=true;D.root.hidden=false;document.documentElement.style.overflow='hidden';
+  summer=!!rec.su;keys.l=keys.r=0;mode='replay';hill=h;st=null;tok++;var my=tok;
+  RPL={rec:rec,onClose:opts&&opts.onClose,t:0,speed:1,paused:false,J:null,done:false,hold:.6};
+  try{D.root.focus({preventScroll:true})}catch(e){}
+  D.menu.hidden=true;D.game.hidden=false;D.res.hidden=true;D.load.style.display='flex';D.load.textContent='Ładowanie skoczni…';
+  hideHud();disposeR();
+  var pb=D.root.querySelector('#trPause');if(pb)pb.textContent='ZAMKNIJ ✕';
+  rpBar().hidden=true;
+  lastT=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);
+  setTimeout(function(){
+    if(my!==tok||!openF||!RPL)return;var j=jv();
+    if(!j||!j.tourBuild||!j.loadThree||!j.buildJump){rpFail('Moduł 3D nie jest dostępny w tej wersji gry.');return}
+    j.loadThree(function(ok){
+      if(my!==tok||!openF||!RPL)return;
+      if(!ok||!window.THREE){rpFail('Nie udało się wczytać silnika 3D.');return}
+      var cv=document.createElement('canvas');D.stage.appendChild(cv);
+      try{
+        var r=j.tourBuild(h.name,h.K,h.HS,h.type,summer,null,cv);r.__cv=cv;R=r;G=r.G;
+        if(R.setWind)R.setWind(Math.abs(Number(rec.w)||0)*3);
+        RPL.J=j.buildJump(G,Number(rec.dr)||Number(rec.d),false,rec.sd);
+        RPL.t=Math.max(0,RPL.J.tSit-.5);
+        gearC=gearFromArr(rec.g);
+        var w=Number(rec.w)||0;
+        D.info.innerHTML='<b>⏪ POWTÓRKA REKORDU · '+flag(h.name)+esc(h.name)+'</b><span>K '+h.K+' · HS '+h.HS+' · '+esc(rec.by||'zawodnik')+' · '+Number(rec.d).toFixed(1)+' m</span>';
+        D.wnd.textContent=(w>0?'+':'')+w.toFixed(1)+' m/s';
+        D.spd.textContent=Math.round(RPL.J.vend/U3*3.6)+' km/h';
+        setPrompt('');D.load.style.display='none';rpBar().hidden=false;rpSync();
+      }catch(err){console.warn('Powtórka:',err);try{cv.remove()}catch(e){}R=null;rpFail('Nie udało się zbudować modelu tej skoczni.')}
+    });
+  },40);
+  return true;
 }
 
 /* ---------- otwieranie / zamykanie ---------- */
@@ -54413,11 +54670,12 @@ function open(){
   showMenu();lastT=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);
 }
 function close(){
-  if(!openF)return;var _c=comp;comp=null;openF=false;tok++;cancelAnimationFrame(raf);raf=0;st=null;ptr=null;steerPtr=null;keys.l=keys.r=0;
+  if(!openF)return;var _rp=RPL;RPL=null;closeLook();var _c=comp;comp=null;openF=false;tok++;cancelAnimationFrame(raf);raf=0;st=null;ptr=null;steerPtr=null;keys.l=keys.r=0;
   disposeR();if(D.stage)D.stage.innerHTML='';D.root.hidden=true;document.documentElement.style.overflow='';
   var _h=D.root.querySelector('#trCompHud');if(_h)_h.remove();
   if(D.root.parentNode&&D.root.parentNode!==document.body)document.body.appendChild(D.root);
   if(_c&&!_c.finished&&_c.onCancel){try{_c.onCancel()}catch(e){console.warn(e)}}
+  if(_rp){mode='menu';var _pb=D.root.querySelector('#trPause');if(_pb)_pb.textContent='MENU ☰';var _rb=D.root.querySelector('#trRpBar');if(_rb)_rb.hidden=true;if(_rp.onClose){try{_rp.onClose()}catch(e){console.warn(e)}}}
 }
 
 /* ---------- przycisk na ekranie tworzenia postaci ---------- */
@@ -54433,7 +54691,7 @@ function initBtn(){
   ensureBtn();[300,900,2000,4000].forEach(function(ms){setTimeout(ensureBtn,ms)});
   var hero=document.querySelector('.hero');if(hero&&window.MutationObserver)new MutationObserver(function(){ensureBtn()}).observe(hero,{childList:true,subtree:true});
 }
-window.PSS_TRAIN={open:open,close:close,startComp:startComp,findHill:findHill,compModel:compModel,recordComp:recordComp,state:function(){return st&&{phase:st.phase,t:st.t,D:st.D,lat:st.lat,fall:st.fall,eT:st.eT,eL:st.eL,tTake:st.J.tTake,tLand:st.J.tLand,shown:st.shown}},act:action,setPit:function(v){if(st){st.pit=v}},act2:0,pick:function(i){var h=cat()[i];if(h)pickHill(h)},tick:function(dt){if(st)step(dt)}};
+window.PSS_TRAIN={replay:startReplay,openLook:openLook,open:open,close:close,startComp:startComp,findHill:findHill,compModel:compModel,recordComp:recordComp,state:function(){return st&&{phase:st.phase,t:st.t,D:st.D,lat:st.lat,fall:st.fall,eT:st.eT,eL:st.eL,tTake:st.J.tTake,tLand:st.J.tLand,shown:st.shown}},act:action,setPit:function(v){if(st){st.pit=v}},act2:0,pick:function(i){var h=cat()[i];if(h)pickHill(h)},tick:function(dt){if(st)step(dt)}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initBtn);else initBtn();
 })();
 </script>
@@ -54498,7 +54756,7 @@ function collectLocal(){
     var b=lsJson(x[0]);
     Object.keys(b).forEach(function(k){
       var p=k.split('|'),f=catalogFind(p[0],+p[2]),h=hillOf(p[0],f?f.K:0,+p[2],p[1]),d=Number(b[k]);
-      if(h&&d>0&&(!h.l||d>h.l.d))h.l={d:d,name:pn,nat:'',player:true,season:0,phase:'',comp:'',date:'',src:x[1]};
+      if(h&&d>0&&(!h.l||d>h.l.d))h.l={d:d,name:pn,nat:'',player:true,season:0,phase:'',comp:'',date:'',src:x[1],rp:rpFor(k,d)};
     });
   });
   return Promise.resolve(H);
@@ -54521,7 +54779,7 @@ function fetchServer(){
       var f=x.document.fields||{};
       function s(k){return f[k]&&f[k].stringValue||''}
       function n(k){var v=f[k];return v?(v.doubleValue!=null?Number(v.doubleValue):v.integerValue!=null?Number(v.integerValue):0)||0:0}
-      return{id:x.document.name.split('/').pop(),uid:s('uid'),nick:s('name')||s('acc'),hill:s('hill'),hs:n('hs'),type:s('type'),dm:Math.round(n('dist')*10),upd:n('updatedAt')};
+      return{id:x.document.name.split('/').pop(),uid:s('uid'),nick:s('name')||s('acc'),hill:s('hill'),hs:n('hs'),type:s('type'),dm:Math.round(n('dist')*10),upd:n('updatedAt'),src:s('src')};
     });
   });
 }
@@ -54533,7 +54791,7 @@ function mineBest(){
       var p=k.split('|'),hs=Math.round(+p[2]),dm=Math.round(Number(b[k])*10);
       if(!p[0]||!(hs>0&&hs<300)||!(dm>0&&dm<=3000))return;
       var id=norm(p[0]).replace(/ /g,'_')+'_'+hs,o=out[id];
-      if(!o||dm>o.dm)out[id]={id:id,hill:p[0],hs:hs,type:String(p[1]||''),dm:dm};
+      if(!o||dm>o.dm)out[id]={id:id,hill:p[0],hs:hs,type:String(p[1]||''),dm:dm,k:k};
     });
   });
   return out;
@@ -54556,7 +54814,7 @@ function syncMine(){
       return todo.reduce(function(p,id){return p.then(function(){
         var m=mine[id];
         return C.api(C.FS+'/hillRecords/'+id,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
-          body:JSON.stringify({fields:{uid:C.str(S.uid),acc:C.str(S.username),name:C.str(S.username),hill:C.str(m.hill),hs:C.int(m.hs),type:C.str(m.type),dist:{doubleValue:m.dm/10},updatedAt:C.int(Date.now())}})});
+          body:JSON.stringify({fields:Object.assign({uid:C.str(S.uid),acc:C.str(S.username),name:C.str(S.username),hill:C.str(m.hill),hs:C.int(m.hs),type:C.str(m.type),dist:{doubleValue:m.dm/10},updatedAt:C.int(Date.now())},srcField(m,C))})});
       })},Promise.resolve());
     });
   }).then(function(){pubRaw=raw;pubNext=0},function(e){pubNext=Date.now()+120000;console.warn('Rekordy globalne: nie wysłano rekordów',e&&e.code||e)}).then(function(){pubBusy=null});
@@ -54568,10 +54826,42 @@ function collectGlobal(){
     rows.forEach(function(r){
       if(!r.hill||!(r.dm>0))return;
       var f=catalogFind(r.hill,r.hs),h=hillOf(r.hill,f?f.K:0,r.hs,r.type),d=r.dm/10;
-      if(h&&(!h.g||d>h.g.d))h.g={d:d,name:r.nick||'?',nat:'',player:!!ownUid&&r.uid===ownUid,season:0,phase:'',comp:'',date:r.upd,src:'Gracz'};
+      if(h&&(!h.g||d>h.g.d)){var rp0=parseRp(r.src);if(!rp0&&ownUid&&r.uid===ownUid)rp0=findLocalRp(r.hill,r.hs,r.dm);h.g={d:d,name:r.nick||'?',nat:'',player:!!ownUid&&r.uid===ownUid,season:0,phase:'',comp:'',date:r.upd,src:'Gracz',rp:rp0};}
     });
     return H;
   });
+}
+
+/* ---------- powtórki rekordów (zapis lokalny + pole „src” w dokumencie Firestore) ---------- */
+var LAST=[];
+function lsRp(){return lsJson('pssRecReplay')}
+function rpFor(k,d){var r=lsRp()[k];return r&&Math.abs(Number(r.d)-Number(d))<.01&&Array.isArray(r.h)?r:null}
+function findLocalRp(name,hs,dm){
+  var m=lsRp(),n=norm(name),out=null;
+  Object.keys(m).forEach(function(k){var r=m[k];if(r&&Array.isArray(r.h)&&norm(r.h[0])===n&&Math.round(Number(r.h[2]))===Math.round(hs)&&Math.round(Number(r.d)*10)===dm)out=r});
+  return out;
+}
+function parseRp(src){
+  if(!src||String(src).slice(0,4)!=='rp1:')return null;
+  try{var r=JSON.parse(String(src).slice(4));return r&&Array.isArray(r.h)&&Number(r.d)>0?r:null}catch(e){return null}
+}
+function srcField(m,C){
+  var r=rpFor(m.k,m.dm/10);if(!r)return{};
+  var s='rp1:'+JSON.stringify(r);if(s.length>20000)return{};
+  return{src:C.str(s)};
+}
+function playBtn(i,r){
+  return r.rp?'<button type="button" class="rc-btn rc-play" data-i="'+i+'" title="Obejrzyj ten rekordowy skok w 3D">▶ OBEJRZYJ</button>'
+    :'<span style="opacity:.55;font-size:.74rem" title="Ten rekord powstał przed dodaniem powtórek albo nie ma zapisanego nagrania">brak nagrania</span>';
+}
+function playRec(x){
+  var T=window.PSS_TRAIN;
+  if(!T||!T.replay||!x||!x.r||!x.r.rp)return;
+  var rec=Object.assign({},x.r.rp,{by:x.r.name||''});
+  D.root.hidden=true;
+  var ok=false;
+  try{ok=T.replay(rec,{onClose:function(){D.root.hidden=false;document.documentElement.style.overflow='hidden';try{D.root.focus({preventScroll:true})}catch(e){}}})}catch(e){console.warn('Powtórka:',e)}
+  if(!ok){D.root.hidden=false;alert('Nie udało się uruchomić powtórki tego skoku.')}
 }
 
 /* ---------- interfejs ---------- */
@@ -54588,7 +54878,7 @@ var CSS='#pssRec{position:fixed;inset:0;z-index:2147483200;background:rgba(3,8,1
 +'#pssRec input.rc-in,#pssRec select.rc-in{width:auto!important;min-width:0!important;max-width:100%;height:auto!important;margin:0!important;border:1px solid rgba(255,255,255,.3)!important;background:rgba(18,32,46,.92)!important;color:#fff!important;border-radius:10px!important;padding:9px 11px!important;font:inherit;font-size:.85rem!important;box-shadow:none!important;box-sizing:border-box}'
 +'#pssRec input.rc-in{width:210px!important}#pssRec input.rc-in::placeholder{color:rgba(255,255,255,.5)}'
 +'#pssRec .rc-info{font-size:.8rem;opacity:.75;line-height:1.4}'
-+'#pssRec .rc-wrap{flex:1;min-height:0;overflow:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px}'
++'#pssRec .rc-wrap{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y;border:1px solid rgba(255,255,255,.12);border-radius:12px}#pssRec .rc-box{max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow:hidden}#pssRec .rc-wrap table{min-width:640px}#pssRec .rc-play{padding:5px 10px;font-size:.72rem;white-space:nowrap}'
 +'#pssRec table{width:100%;border-collapse:collapse;font-size:.86rem}#pssRec th{position:sticky;top:0;background:#16314b;text-align:left;padding:9px 10px;font-size:.7rem;letter-spacing:.08em;white-space:nowrap}'
 +'#pssRec td{padding:8px 10px;border-top:1px solid rgba(255,255,255,.08);vertical-align:middle}#pssRec tr:hover td{background:rgba(255,255,255,.04)}'
 +'#pssRec td.d{font-weight:900;font-size:1rem;color:#ffd36b;white-space:nowrap}#pssRec td.mut{opacity:.75;font-size:.78rem}#pssRec .me{color:#6dff9b;font-weight:800}'
@@ -54619,6 +54909,7 @@ function build(){
   D.country.onchange=function(){F.country=D.country.value;render()};
   D.size.onchange=function(){F.size=D.size.value;render()};
   D.sort.onchange=function(){F.sort=D.sort.value;render()};
+  D.wrap.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.rc-play');if(!b)return;var x=LAST[+b.getAttribute('data-i')];if(x)playRec(x)});
   window.addEventListener('keydown',function(e){if(e.key==='Escape'&&D.root&&!D.root.hidden){e.preventDefault();e.stopPropagation();if(mode!=='choose')showChoose();else close()}},true);
 }
 function showChoose(){
@@ -54675,15 +54966,15 @@ function render(){
     return;
   }
   var head=mode==='local'
-    ?'<tr><th>#</th><th>SKOCZNIA</th><th>KRAJ</th><th>TWÓJ REKORD</th><th>KIEDY</th></tr>'
-    :'<tr><th>#</th><th>SKOCZNIA</th><th>KRAJ</th><th>REKORD</th><th>REKORDZISTA</th><th>KIEDY</th></tr>';
-  var body=rows.map(function(x,i){
+    ?'<tr><th>#</th><th>SKOCZNIA</th><th>KRAJ</th><th>TWÓJ REKORD</th><th>KIEDY</th><th>POWTÓRKA</th></tr>'
+    :'<tr><th>#</th><th>SKOCZNIA</th><th>KRAJ</th><th>REKORD</th><th>REKORDZISTA</th><th>KIEDY</th><th>POWTÓRKA</th></tr>';
+  LAST=rows;var body=rows.map(function(x,i){
     var h=x.h,r=x.r;
     var hill='<b>'+esc(h.name)+'</b><small>'+(h.k?'K '+h.k+' · ':'')+(h.hs?'HS '+h.hs+' · ':'')+(TS[h.type]||'')+'</small>';
     var country=h.code?flagC(h.code)+esc(cname(h.code)):'<span style="opacity:.5">—</span>';
     var who=flagC(r.nat)+(r.player?'<span class="me">'+esc(r.name)+' ★</span>':esc(r.name));
     return'<tr><td class="mut">'+(i+1)+'</td><td>'+hill+'</td><td>'+country+'</td><td class="d">'+fmt(r.d)+' m</td>'
-      +(mode==='local'?'':'<td>'+who+'</td>')+'<td class="mut">'+when(r)+'</td></tr>';
+      +(mode==='local'?'':'<td>'+who+'</td>')+'<td class="mut">'+when(r)+'</td><td>'+playBtn(i,r)+'</td></tr>';
   }).join('');
   D.wrap.innerHTML='<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
 }
@@ -54737,8 +55028,104 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 (function(){
   var WRAP_HTML='<div class="adv-deco l"><svg viewBox="0 0 40 56" aria-hidden="true"><rect x="16" y="2" width="8" height="8" rx="1.5" fill="#d9b44a"/><circle cx="20" cy="34" r="19" fill="#c8102e"/><path d="M5 30q15 8 30 0M6 40q14 8 28 0" fill="none" stroke="#fff" stroke-width="2.5" opacity=".8"/><ellipse cx="13" cy="26" rx="4" ry="6" fill="#fff" opacity=".35" transform="rotate(25 13 26)"/></svg><svg viewBox="0 0 44 60" aria-hidden="true"><g fill="#b5733a" stroke="#8a5224" stroke-width="1.5" stroke-linejoin="round"><circle cx="22" cy="12" r="9"/><path d="M14 22h16l11 5-3 8-8-3v8l5 14h-8l-5-9-5 9H9l5-14v-8l-8 3-3-8z"/></g><circle cx="18.5" cy="11" r="1.4" fill="#3a1d08"/><circle cx="25.5" cy="11" r="1.4" fill="#3a1d08"/><path d="M18 15q4 3 8 0" fill="none" stroke="#3a1d08" stroke-width="1.4" stroke-linecap="round"/><circle cx="22" cy="28" r="1.8" fill="#fff"/><circle cx="22" cy="35" r="1.8" fill="#fff"/><path d="M15 22l7 4 7-4" fill="none" stroke="#fff" stroke-width="2"/></svg></div><button type="button" id="adventCalendarBtn" class="adv-btn"><span>KALENDARZ ADWENTOWY</span></button><div class="adv-deco r"><svg viewBox="0 0 40 56" aria-hidden="true" class="adv-bell"><circle cx="20" cy="6" r="4" fill="none" stroke="#c8102e" stroke-width="3"/><path d="M20 10c-9 0-12 9-12 18 0 6-3 8-4 10h32c-1-2-4-4-4-10 0-9-3-18-12-18z" fill="#e8b92f" stroke="#b88a14" stroke-width="2"/><circle cx="20" cy="45" r="5" fill="#b88a14"/><path d="M8 38h24" stroke="#c8102e" stroke-width="3"/></svg><svg viewBox="0 0 40 56" aria-hidden="true"><rect x="16" y="2" width="8" height="8" rx="1.5" fill="#d9b44a"/><circle cx="20" cy="34" r="19" fill="#1f8a3b"/><path d="M5 30q15 8 30 0M6 40q14 8 28 0" fill="none" stroke="#fff" stroke-width="2.5" opacity=".8"/><ellipse cx="13" cy="26" rx="4" ry="6" fill="#fff" opacity=".35" transform="rotate(25 13 26)"/></svg><svg viewBox="0 0 40 70" aria-hidden="true"><path d="M12 66V24a10 10 0 0 1 20 0" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M12 66V24a10 10 0 0 1 20 0" fill="none" stroke="#d6182f" stroke-width="9" stroke-linecap="round" stroke-dasharray="6 7"/></svg></div>';
   var scr=document.getElementById('adventScreen'),back=document.getElementById('adventBack'),btn=null;
-  function open(){scr.classList.add('show');scr.setAttribute('aria-hidden','false');back.focus()}
+  function open(){buildGrid();scr.classList.add('show');scr.setAttribute('aria-hidden','false');back.focus()}
   function close(){scr.classList.remove('show');scr.setAttribute('aria-hidden','true');if(btn)try{btn.focus()}catch(e){}}
+  /* ---------- plansza z 24 prezentami ---------- */
+  var GOLD='#e8b92f';
+  function shade(h,k){var n=parseInt(h.slice(1),16),r=n>>16,g=n>>8&255,b=n&255,f=function(c){return Math.max(0,Math.min(255,Math.round(k<0?c*(1+k):c+(255-c)*k)))};return'#'+((1<<24)|(f(r)<<16)|(f(g)<<8)|f(b)).toString(16).slice(1)}
+  var PAT={
+    baubles:function(p){return[30,30,'<circle cx="9" cy="12" r="6" fill="'+p[0]+'"/><rect x="7" y="4.5" width="4" height="3" fill="'+GOLD+'"/><circle cx="7" cy="10" r="1.6" fill="#fff" opacity=".6"/><circle cx="24" cy="26" r="5" fill="'+p[1]+'"/><rect x="22" y="19.5" width="4" height="2.6" fill="'+GOLD+'"/><circle cx="22.5" cy="24.5" r="1.3" fill="#fff" opacity=".6"/><circle cx="25" cy="8" r="1.8" fill="'+(p[2]||p[0])+'"/>']},
+    snowflakes:function(p){return[28,28,'<g stroke="'+p[0]+'" stroke-width="1.6" stroke-linecap="round"><path d="M14 5V23M6.2 9.5L21.8 18.5M6.2 18.5L21.8 9.5"/></g><circle cx="2" cy="2" r="1.5" fill="'+p[1]+'"/><circle cx="26" cy="26" r="1.5" fill="'+p[1]+'"/>']},
+    stars:function(p){return[28,28,'<polygon points="14,5.5 16.4,11.2 22.5,11.6 17.8,15.5 19.3,21.5 14,18.2 8.7,21.5 10.2,15.5 5.5,11.6 11.6,11.2" fill="'+p[0]+'"/><circle cx="3" cy="3" r="1.3" fill="'+p[1]+'"/><circle cx="25" cy="25" r="1.3" fill="'+p[1]+'"/>']},
+    candy:function(p){return[26,30,'<path d="M8 27V11Q8 5 14 5Q20 5 20 11" stroke="#fff" stroke-width="4.2" fill="none" stroke-linecap="round"/><path d="M8 27V11Q8 5 14 5Q20 5 20 11" stroke="'+p[0]+'" stroke-width="4.2" fill="none" stroke-dasharray="3 4"/>']},
+    bells:function(p){return[28,30,'<path d="M14 5C9.5 5 8 9 8 13c0 3-1.5 4-2.5 5h17c-1-1-2.5-2-2.5-5 0-4-1.5-8-6-8z" fill="'+p[0]+'" stroke="'+p[1]+'" stroke-width="1"/><circle cx="14" cy="21" r="2.2" fill="'+p[1]+'"/><path d="M10 4q4-3 8 0" stroke="#c8102e" fill="none" stroke-width="1.6"/>']},
+    trees:function(p){return[28,30,'<path d="M14 3L21 12H17L23 20H5L11 12H7Z" fill="'+p[0]+'"/><rect x="12.5" y="20" width="3" height="4" fill="#6b3f1d"/><circle cx="11" cy="17" r="1.2" fill="'+p[1]+'"/><circle cx="17" cy="16.5" r="1.2" fill="'+p[1]+'"/><circle cx="14" cy="9" r="1.2" fill="'+p[1]+'"/>']},
+    hearts:function(p){return[26,26,'<path d="M13 21C4 15 3 9.5 7 7.5 10 6 12.3 8 13 9.5 13.7 8 16 6 19 7.5 23 9.5 22 15 13 21Z" fill="'+p[0]+'"/><circle cx="3" cy="3" r="1.3" fill="'+p[1]+'"/><circle cx="23" cy="24" r="1.3" fill="'+p[1]+'"/>']},
+    holly:function(p){return[30,28,'<path d="M15 14C11 8 5 9 4 12c3 1 3 4 7 3z" fill="'+p[0]+'"/><path d="M15 14C19 8 25 9 26 12c-3 1-3 4-7 3z" fill="'+p[0]+'"/><circle cx="15" cy="15" r="2.6" fill="'+p[1]+'"/><circle cx="12.5" cy="17.5" r="2" fill="'+p[1]+'"/><circle cx="17.5" cy="17.5" r="2" fill="'+p[1]+'"/>']},
+    stripes:function(p){return[20,20,'<rect width="10" height="20" fill="'+p[0]+'"/><rect x="10" width="10" height="20" fill="'+p[1]+'"/>',45]},
+    dots:function(p){return[20,20,'<circle cx="6" cy="6" r="3" fill="'+p[0]+'"/><circle cx="16" cy="16" r="3" fill="'+p[1]+'"/>']},
+    snowman:function(p){return[34,38,'<circle cx="17" cy="28" r="7" fill="'+p[0]+'"/><circle cx="17" cy="16" r="5" fill="'+p[0]+'"/><rect x="13" y="7" width="8" height="4" fill="#222"/><rect x="11.5" y="10.5" width="11" height="1.6" fill="#222"/><circle cx="15.5" cy="15" r=".8" fill="#222"/><circle cx="18.5" cy="15" r=".8" fill="#222"/><path d="M17 16.5l3.5 1" stroke="'+p[1]+'" stroke-width="1.2"/><rect x="12.5" y="20.5" width="9" height="2" fill="#c8102e"/><circle cx="17" cy="26" r=".9" fill="#444"/><circle cx="17" cy="30" r=".9" fill="#444"/>']},
+    lights:function(p){return[36,26,'<path d="M0 5Q9 15 18 5Q27 15 36 5" stroke="#1b1b1b" fill="none" stroke-width="1.2"/><circle cx="9" cy="11" r="3" fill="'+p[0]+'"/><circle cx="27" cy="11" r="3" fill="'+p[1]+'"/><circle cx="8" cy="10" r=".9" fill="#fff" opacity=".7"/><circle cx="26" cy="10" r=".9" fill="#fff" opacity=".7"/>']}
+  };
+  var SH={
+    box:{d:'M12 40H88V92H12Z',lid:[8,28,84,14],bow:[50,28],cy:66,vs:[44]},
+    tall:{d:'M28 30H72V92H28Z',lid:[24,18,52,14],bow:[50,18],cy:64,vs:[44]},
+    wide:{d:'M6 52H94V92H6Z',lid:[2,41,96,13],bow:[50,41],cy:74,vs:[44]},
+    hat:{d:'M14 38V84Q14 95 50 95Q86 95 86 84V38Z',ell:[50,38,36,9],bow:[50,32],cy:70,vs:[44]},
+    hex:{d:'M30 20H70L92 56 70 92H30L8 56Z',bow:[50,20],cy:56,vs:[44]},
+    sack:{d:'M36 30Q28 44 14 62Q6 92 50 94Q94 92 86 62Q72 44 64 30Z',tie:[34,26,32,9],bow:[50,28],vs:[],cy:0},
+    tree:{d:'M50 6L80 44H67L92 78H58V94H42V78H8L33 44H20Z',bow:[50,10],cy:62,vs:[44]},
+    heart:{d:'M50 90C10 62 6 38 24 26C38 17 48 26 50 34C52 26 62 17 76 26C94 38 90 62 50 90Z',bow:[50,32],cy:52,vs:[44]},
+    star:{d:'M50 6L61 36 94 38 68 58 78 90 50 72 22 90 32 58 6 38 39 36Z',bow:[50,40],cy:56,vs:[44]},
+    diamond:{d:'M50 6L94 50 50 94 6 50Z',bow:[50,12],cy:50,vs:[44]},
+    bauble:{d:'M50 30A32 32 0 1 1 49.99 30Z',cap:1,bow:[50,34],cy:62,vs:[44]},
+    cracker:{d:'M2 46L22 38V82L2 74L12 60ZM22 38H78V82H22ZM98 46L78 38V82L98 74L88 60Z',bow:[50,60],cy:0,vs:[16,72]}
+  };
+  var GIFTS=[
+    ['box','#c8102e','baubles',['#ffd54a','#ffffff','#2e9e4f'],'#ffd54a',1],
+    ['tall','#1f6b3a','snowflakes',['#ffffff','#bfe6ff'],'#c8102e',1],
+    ['wide','#1d3f8f','stars',['#ffd54a','#fff4c2'],'#ffffff',1],
+    ['hat','#f4e3c3','candy',['#c8102e','#ffffff'],'#1f6b3a',1],
+    ['hex','#6a2fb5','bells',['#ffd54a','#b8860b'],'#ffd54a',0],
+    ['sack','#8b5a2b','trees',['#2e9e4f','#ffd54a'],'#c8102e',0],
+    ['tree','#0e8a7d','baubles',['#ff5d73','#ffd54a','#ffffff'],'#ff5d73',0],
+    ['heart','#e8456b','hearts',['#ffffff','#ffd1dc'],'#ffffff',0],
+    ['star','#f2b632','holly',['#1f6b3a','#c8102e'],'#c8102e',0],
+    ['diamond','#2a6fdb','stripes',['#2a6fdb','#cfe3ff'],'#ffd54a',0],
+    ['bauble','#c2185b','dots',['#ffd54a','#ffffff'],'#ffd54a',1],
+    ['cracker','#1d3557','snowman',['#ffffff','#ff7a00'],'#c8102e',0],
+    ['box','#f7f7fb','lights',['#c8102e','#1f6b3a'],'#c8102e',1],
+    ['tall','#ff7a00','snowflakes',['#ffffff','#fff1c9'],'#1d3f8f',1],
+    ['wide','#2e9e4f','stars',['#ffffff','#ffd54a'],'#c8102e',1],
+    ['hat','#101820','candy',['#ffffff','#c8102e'],'#ffd54a',1],
+    ['hex','#00afca','bells',['#ffffff','#ffd54a'],'#c8102e',0],
+    ['sack','#c8102e','trees',['#ffffff','#ffd54a'],'#ffd54a',0],
+    ['tree','#3a2a6b','hearts',['#ff7a9c','#ffd54a'],'#ff7a9c',0],
+    ['heart','#ffd1dc','holly',['#1f6b3a','#c8102e'],'#1f6b3a',0],
+    ['star','#8fd81a','stripes',['#2e9e4f','#d6f59a'],'#c8102e',0],
+    ['diamond','#ff5d73','dots',['#ffffff','#ffd54a'],'#ffffff',0],
+    ['bauble','#0b5d3b','snowman',['#ffffff','#ff7a00'],'#ffd54a',1],
+    ['cracker','#f4e3c3','lights',['#c8102e','#2e9e4f'],'#c8102e',0]
+  ];
+  var ORDER=[7,19,3,12,24,1,16,9,21,5,14,22,2,11,18,6,23,10,15,4,20,13,8,17];
+  function bowSvg(x,y,c){var dk=shade(c,-.3);return'<g transform="translate('+x+' '+y+')" stroke="'+dk+'" stroke-width="1.4" stroke-linejoin="round"><ellipse cx="-10" cy="-4" rx="11" ry="6.5" transform="rotate(-24 -10 -4)" fill="'+c+'"/><ellipse cx="10" cy="-4" rx="11" ry="6.5" transform="rotate(24 10 -4)" fill="'+c+'"/><path d="M-3 0L-9 12M3 0L9 12" fill="none" stroke-width="3.2" stroke-linecap="round" stroke="'+c+'"/><circle cx="0" cy="-1" r="4.2" fill="'+shade(c,.12)+'"/></g>'}
+  function giftSvg(i,g){
+    var sh=SH[g[0]],base=g[1],rib=g[4],cross=g[5],t=PAT[g[2]](g[3]),id='ag'+i,ang=t[3]||0;
+    var band='';
+    sh.vs.forEach(function(x){band+='<rect x="'+x+'" y="0" width="12" height="100" fill="'+rib+'"/>'});
+    if(cross&&sh.cy)band+='<rect x="0" y="'+(sh.cy-6)+'" width="100" height="12" fill="'+rib+'"/>';
+    var extra='';
+    if(sh.lid){var l=sh.lid;extra+='<rect x="'+l[0]+'" y="'+l[1]+'" width="'+l[2]+'" height="'+l[3]+'" rx="3" fill="'+shade(base,-.18)+'" stroke="rgba(0,0,0,.4)" stroke-width="2"/><rect x="44" y="'+l[1]+'" width="12" height="'+l[3]+'" fill="'+rib+'"/>'}
+    if(sh.ell){var e=sh.ell;extra+='<ellipse cx="'+e[0]+'" cy="'+e[1]+'" rx="'+e[2]+'" ry="'+e[3]+'" fill="'+shade(base,-.18)+'" stroke="rgba(0,0,0,.4)" stroke-width="2"/><path d="M44 '+(e[1]-e[3]+1)+'H56V'+(e[1]+e[3]-1)+'H44Z" fill="'+rib+'"/>'}
+    if(sh.tie){var q=sh.tie;extra+='<rect x="'+q[0]+'" y="'+q[1]+'" width="'+q[2]+'" height="'+q[3]+'" rx="4.5" fill="'+rib+'" stroke="'+shade(rib,-.3)+'" stroke-width="1.5"/>'}
+    if(sh.cap)extra+='<rect x="40" y="10" width="20" height="14" rx="2.5" fill="'+GOLD+'" stroke="#b88a14" stroke-width="1.5"/><circle cx="50" cy="8" r="5" fill="none" stroke="#b88a14" stroke-width="2"/>';
+    return'<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><defs><pattern id="p'+id+'" patternUnits="userSpaceOnUse" width="'+t[0]+'" height="'+t[1]+'"'+(ang?' patternTransform="rotate('+ang+')"':'')+'>'+t[2]+'</pattern><clipPath id="c'+id+'"><path d="'+sh.d+'"/></clipPath><linearGradient id="g'+id+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>'
+      +'<ellipse cx="50" cy="96" rx="34" ry="3" fill="#000" opacity=".28"/>'
+      +'<path d="'+sh.d+'" fill="'+base+'"/><g clip-path="url(#c'+id+')"><rect width="100" height="100" fill="url(#p'+id+')"/>'+band+'</g>'
+      +'<path d="'+sh.d+'" fill="url(#g'+id+')"/><path d="'+sh.d+'" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="2" stroke-linejoin="round"/>'
+      +extra+bowSvg(sh.bow[0],sh.bow[1],rib)+'</svg>';
+  }
+  var built=false;
+  function buildGrid(){
+    if(built)return;built=true;
+    var snow=document.createElement('div');snow.className='adv-snow';
+    for(var s=0;s<38;s++){var f=document.createElement('i'),z=2+Math.random()*4;f.style.cssText='left:'+(Math.random()*100)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+(7+Math.random()*9)+'s;animation-delay:-'+(Math.random()*12)+'s';snow.appendChild(f)}
+    scr.insertBefore(snow,scr.firstChild);
+    var title=document.createElement('h2');title.className='adv-title';title.textContent='KALENDARZ ADWENTOWY';
+    var grid=document.createElement('div');grid.className='adv-grid';grid.id='advGrid';
+    var msg=document.createElement('div');msg.className='adv-msg';msg.id='advMsg';msg.setAttribute('aria-live','polite');
+    var sub=scr.querySelector('p');if(sub)sub.className='adv-sub';
+    scr.insertBefore(title,sub||null);scr.appendChild(grid);scr.appendChild(msg);
+    ORDER.forEach(function(n,idx){
+      var b=document.createElement('button');b.type='button';b.className='adv-gift';b.style.setProperty('--i',idx);b.setAttribute('aria-label','Prezent '+n);
+      b.innerHTML='<span class="adv-svg">'+giftSvg(n,GIFTS[n-1])+'</span><span class="adv-num">'+n+'</span>';
+      b.addEventListener('click',function(){
+        b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');
+        msg.textContent='Prezent nr '+n+' otworzysz '+n+' grudnia.';
+      });
+      grid.appendChild(b);
+    });
+  }
   back.addEventListener('click',close);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&scr.classList.contains('show'))close()});
   /* Przycisk dołącza do rzędu złotych przycisków (EDYTOR GRY, TRENING, REKORDY…) na ekranie tworzenia postaci.
@@ -54761,21 +55148,23 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <script id="pss-self-jumps">
 /* === ODDAJ SKOKI KONKURSOWE ===
-   Konkurs jest prezentowany tak jak w „POKAŻ SKOKI KONKURSOWE” (grafika wstępna, lista startowa, szata, wiatr, „to beat”),
-   ale skoki zawodnika oddaje gracz – po kolei, w kolejności startowej. Drugi skok tylko po awansie do kolejnej serii.
-   Odległość zależy od jakości wykonania ORAZ od OVR zawodnika na danej skoczni.
-   Technika: pole startowe jest losowane deterministycznie (ziarno + osobny strumień dla każdego zawodnika), a pomocnicze
-   symulacje działają na kopii zapisu w pamięci (nic nie trafia do localStorage). Dopiero na końcu konkurs zapisuje się naprawdę. */
+   Konkurs jest prezentowany tak jak w „POKAŻ SKOKI KONKURSOWE”, ale skoki zawodnika oddaje gracz.
+   Jeśli konkurs ma kwalifikacje: najpierw skaczesz w kwalifikacjach; dopiero po awansie (TOP 50, w lotach TOP 40) oddajesz skoki konkursowe.
+   Jeśli przed konkursem pojawia się decyzja/wydarzenie, po jej rozstrzygnięciu skoki oddajesz normalnie (zamiast automatycznej symulacji).
+   Technika: pomocnicze symulacje działają na kopii zapisu w pamięci (piaskownica localStorage). Wynik ostatniej symulacji
+   jest dokładnie tym, co widzisz na ekranie – na końcu zapisujemy właśnie ten stan (a nie nową, losowo różną symulację). */
 (function(){
 'use strict';
 var PKEY='polskiSkoczekCurrentPlayer';
-var Q={armed:false,seed:null,cnt:{},hill:'',jumps:[],next:0,used:0};
+var Q={armed:false,seed:null,cnt:{},hill:'',jumps:[],next:0,used:0,qual:null,qualUsed:false,lastMem:null,lastN:-1};
+var WANT=null;
 function one(x){return Math.round(x*10)/10}
 function rh(x){return Math.round(x*2)/2}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function fold(s){return String(s||'').toLowerCase().replace(/ł/g,'l').normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function mul32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function ovrFor(p,course){
   try{return Number(window.getOvrForCourse(Object.assign({},p,{player:true}),course))||0}catch(e){}
   try{return Number(window.calculateOvr(p))||0}catch(e){}
@@ -54784,22 +55173,30 @@ function ovrFor(p,course){
 
 /* --- podmiana skoków zawodnika + deterministyczne strumienie --- */
 function inQual(){try{return /\brun0\b/.test(new Error().stack||'')}catch(e){return false}}
-function manual(j,src,course){
-  if(!j||Q.next>=Q.jumps.length)return j;
-  if(inQual())return j; /* kwalifikacje zostają symulowane – skoki ręczne dotyczą serii konkursowych */
-  if(fold(course&&course[0])!==Q.hill)return j;
-  var mj=Q.jumps[Q.next++];if(!mj)return j;
+function convert(j,src,course,mj,tag){
   Q.used++;
   if(j.dsq)return Object.assign({},j,{dist:mj.dist,fall:!!mj.fall,manual:true});
   var o=ovrFor(src,course),ti=window.typeInfo&&window.typeInfo[course[1]];
   if(!ti)return j;
   var fall=!!mj.fall,dist=mj.dist,style,wind=one(clamp(-(Number(mj.wind)||0)*2,-3.75,3.75));
-  var r=mul32(hash('m|'+Q.seed+'|'+Q.next));
+  var r=mul32(hash('m|'+Q.seed+'|'+tag));
   if(fall)style=clamp(rh(28+r()*10),25,42);
   else style=clamp(rh(57.5-mj.pen*1.8+(o-60)*0.015+(r()-.5)*2),42,60);
   var adj=fall?0:one((o-60)*0.45);
   var total=one(ti.kBase+(dist-course[2])*ti.perMeter+style+wind+adj);
   return Object.assign({},j,{dist:dist,style:style,wind:wind,fall:fall,total:total,manual:true});
+}
+function manual(j,src,course){
+  if(!j)return j;
+  if(fold(course&&course[0])!==Q.hill)return j;
+  if(inQual()){ /* kwalifikacje: jeden skok gracza, jeśli został oddany */
+    if(!Q.qual||Q.qualUsed)return j;
+    Q.qualUsed=true;
+    return convert(j,src,course,Q.qual,'q');
+  }
+  if(Q.next>=Q.jumps.length)return j;
+  var mj=Q.jumps[Q.next++];if(!mj)return j;
+  return convert(j,src,course,mj,String(Q.next));
 }
 function installHook(){
   var cur=window.jumpScore;if(typeof cur!=='function'||cur.__pssSelf)return true;
@@ -54822,7 +55219,7 @@ function installHook(){
   setTimeout(function(){wait((n||0)+1)},400);
 })(0);
 
-/* --- piaskownica localStorage: pomocnicze symulacje nie zapisują nic naprawdę --- */
+/* --- piaskownica localStorage --- */
 function sandbox(){
   var P=Storage.prototype,g=P.getItem,s=P.setItem,r=P.removeItem,mem=new Map();
   P.getItem=function(k){if(this!==localStorage)return g.call(this,k);k=String(k);return mem.has(k)?mem.get(k):g.call(this,k)};
@@ -54830,26 +55227,28 @@ function sandbox(){
   P.removeItem=function(k){if(this!==localStorage)return r.call(this,k);mem.set(String(k),null)};
   return {mem:mem,end:function(){P.getItem=g;P.setItem=s;P.removeItem=r}};
 }
-async function runSim(sim,seed,queue,sandboxed,hillName){
-  Q.seed=seed;Q.cnt={};Q.jumps=queue||[];Q.next=0;Q.used=0;Q.hill=hillName||'';Q.armed=true;
+async function runSim(sim,seed,queue,sandboxed,hillName,qualJump){
+  Q.seed=seed;Q.cnt={};Q.jumps=queue||[];Q.next=0;Q.used=0;Q.hill=hillName||'';Q.qual=qualJump||null;Q.qualUsed=false;Q.armed=true;
   var savedRnd=Math.random,oldSkip=window.__pssSkipSlow,sb=sandboxed?sandbox():null;
   Math.random=mul32(seed>>>0);window.__pssSkipSlow=true;
-  /* w trybie własnych skoków zawodnik nie jest losowo dyskwalifikowany (kontrola sprzętu) – wynik ma wynikać z Twojego skoku */
   var DQ=window.PSS_DSQ,dqMark=DQ&&DQ.mark;
   if(dqMark)DQ.mark=function(){var out=dqMark.apply(this,arguments);try{(out||[]).forEach(function(a){if(a&&a.player===true)a.dsq=false})}catch(e){}return out};
   var raw=null;
   try{
     var out=sim('one');
-    var restoreRnd=function(){Math.random=savedRnd};
-    restoreRnd();
+    Math.random=savedRnd;
     if(out&&typeof out.then==='function')await out;
-    if(sb){var v=sb.mem.get(PKEY);raw=(v==null)?null:v}
+    if(sb){var v=sb.mem.get(PKEY);raw=(v==null)?null:v;Q.lastMem=new Map(sb.mem);Q.lastN=(queue||[]).length}
   }finally{
-    Math.random=savedRnd;window.__pssSkipSlow=oldSkip;Q.armed=false;Q.seed=null;
+    Math.random=savedRnd;window.__pssSkipSlow=oldSkip;Q.armed=false;Q.seed=null;Q.qual=null;
     if(dqMark)DQ.mark=dqMark;
     if(sb)sb.end();
   }
   return raw;
+}
+/* zapisuje do prawdziwego localStorage dokładnie ten stan, który pokazała ostatnia symulacja */
+function flush(mem){
+  mem.forEach(function(v,k){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){console.warn('Zapis konkursu:',e)}});
 }
 
 /* --- pomocnicze --- */
@@ -54861,11 +55260,16 @@ function toast(t){
   d.textContent=t;d.style.display='block';clearTimeout(d._t);d._t=setTimeout(function(){d.style.display='none'},5200);
 }
 function readP(){try{var r=localStorage.getItem(PKEY);return r?JSON.parse(r):null}catch(e){return null}}
+function hideResults(){
+  try{var rs=document.getElementById('resultsScreen');if(rs){rs.classList.remove('show');rs.setAttribute('aria-hidden','true')}
+    var p=readP();if(p&&typeof window.renderPlayer==='function')window.renderPlayer(p)}catch(e){}
+}
+function hasPlayerQual(r){return !!(r&&r.qualification&&Array.isArray(r.qualification.rows)&&r.qualification.rows.some(function(x){return x&&x[4]}))}
 function newResults(p,seen){
   var jv=window.PSS_JV,out=[];if(!p||!jv)return out;
   jv.resultSources(p).forEach(function(r){
     if(!r||!r.id||seen.has(r.id))return;
-    var elig=(r.teams||[]).concat(r.replayEliminated||[]).some(function(t){return t.members&&t.members.some(function(m){return m.player})})||[r.rows,r.entries,r.allRows].some(function(rows){return rows&&rows.some(function(a){return a.player&&a.s1})});
+    var elig=(r.teams||[]).concat(r.replayEliminated||[]).some(function(t){return t.members&&t.members.some(function(m){return m.player})})||[r.rows,r.entries,r.allRows].some(function(rows){return rows&&rows.some(function(a){return a.player&&a.s1})})||hasPlayerQual(r);
     if(elig)out.push(r);
   });
   return out;
@@ -54874,8 +55278,6 @@ function courseOf(r){
   var k=Number(r.k)||120,hs=Number(r.hs)||k+15;
   return [r.course,r.hillType||(k>=170?'fly':k>=100?'large':'normal'),k,hs];
 }
-
-/* „to beat” / „awans od” przeliczone na biegły skok gracza: styl ok. 55,5 pkt i rzeczywisty wiatr tego skoku */
 function beatFnFor(stage,res,course){
   var s=stage&&stage.shot,ti=window.typeInfo&&window.typeInfo[course[1]];
   if(!s||s.dsq||!ti||s.dist==null)return null;
@@ -54889,35 +55291,87 @@ function beatFnFor(stage,res,course){
     return Math.max(.5,Math.round(d*2)/2);
   };
 }
+
+/* --- kwalifikacje --- */
+function startNr(p,res,summer,rows){
+  try{
+    var ranks=window.PSS_competitionRanks(p,res.level||'WC',summer,res,false);
+    var pos=function(x){return ranks.positions.get(x[1]+'|'+x[2])||Infinity};
+    var arr=rows.slice().sort(function(a,b){return pos(b)-pos(a)||(Number(a[3])||0)-(Number(b[3])||0)||String(b[1]).localeCompare(String(a[1]),'pl')});
+    var i=arr.findIndex(function(x){return x[4]});return i>=0?i+1:1;
+  }catch(e){return 1}
+}
+function qualBeatFn(resA,course,ovr){
+  var q=resA.qualification,rows=q.rows,n=q.n||50,ti=window.typeInfo&&window.typeInfo[course[1]];
+  var others=rows.filter(function(x){return !x[4]&&!x[10]}).map(function(x){return Number(x[8])||0}).sort(function(a,b){return b-a});
+  if(!ti||others.length<n)return null;
+  var cut=others[n-1],adj=(ovr-60)*0.45;
+  return function(target,windPts){
+    if(target==null)return null;
+    var d=course[2]+(cut-ti.kBase-55.5-windPts-adj)/ti.perMeter;
+    return Math.max(.5,Math.ceil(d*2)/2);
+  };
+}
+function qualPanel(o){
+  return new Promise(function(done){
+    var d=document.createElement('div');d.id='pssQualPanel';
+    d.style.cssText='position:fixed;inset:0;z-index:2147483300;background:rgba(3,8,14,.92);display:flex;align-items:center;justify-content:center;padding:14px;font-family:system-ui,sans-serif';
+    var m=o.me,ok=o.qualified,Q_=window.PSS_QUAL;
+    var table=Q_&&Q_.qualTable?Q_.qualTable(o.res.qualification):'';
+    var sum=m?('Twój skok: <b>'+(m[10]?'DYSKWALIFIKACJA':(m[5]!=null?Number(m[5]).toFixed(1)+' m':'—'))+'</b>'+(m[10]?'':' · nota <b>'+Number(m[8]).toFixed(1)+'</b>')+' · miejsce w kwalifikacjach: <b>'+(m[10]?'—':m[0]+'.')+'</b>'):'';
+    d.innerHTML='<div style="width:min(980px,100%);max-height:100%;overflow:auto;background:#fff;color:#18314f;border-radius:16px;padding:16px 18px;box-shadow:0 14px 60px #000c;box-sizing:border-box">'
+      +'<h2 style="margin:0 0 6px;letter-spacing:.06em">KWALIFIKACJE — '+esc(o.res.course||'')+'</h2>'
+      +'<p style="margin:0 0 8px;font-size:1rem">'+sum+'</p>'
+      +'<p style="margin:0 0 12px;font-weight:900;font-size:1.15rem;color:'+(ok?'#1f7a3f':'#b3261e')+'">'+(ok?'✔ AWANSUJESZ DO KONKURSU — teraz oddasz skoki konkursowe.':'✖ BRAK AWANSU — w tym konkursie już nie wystartujesz.')+'</p>'
+      +'<div style="max-height:46vh;overflow:auto;margin-bottom:12px">'+table+'</div>'
+      +'<button type="button" id="pssQualGo" class="career-btn" style="font-size:1rem;padding:12px 22px">'+(ok?'DALEJ — KONKURS':'ZAMKNIJ')+'</button></div>';
+    document.body.appendChild(d);
+    d.querySelector('#pssQualGo').onclick=function(){d.remove();done()};
+  });
+}
+function waitIdle(){return new Promise(function(res){var n=0;(function t(){if(!window.__PSS_SIM_BUSY||n++>75)return res();setTimeout(t,40)})()})}
+
 var busy=false;
+function markWant(summer,p){WANT={summer:!!summer,t:Date.now(),season:p&&p.season}}
 async function startSelf(summer){
   if(busy)return;
   var jv=window.PSS_JV,tr=window.PSS_TRAIN;
   var p0=window.loadPlayer&&window.loadPlayer();if(!p0)return;
   var sim=summer?(window.simulateSummerMode||(window.__PSS_SUMMER_API&&window.__PSS_SUMMER_API.simulateMode)):(window.simulateModeV2||window.simulateMode);
   if(typeof sim!=='function'||!jv||!tr||!tr.startComp){return}
-  if(window.__PSS_SIM_BUSY||p0.pendingEventId){toast('Najpierw dokończ trwające wydarzenie.');return}
+  await waitIdle();
+  if(window.__PSS_SIM_BUSY){toast('Poczekaj, trwa symulacja.');return}
   var plainSim=function(){return summer?window.simulateSummerMode('one'):window.simulateMode('one')};
-  if(!summer&&(p0.eventTargets||[]).some(function(t){return Number(t)===Number(p0.simulationCursor)})){plainSim();return}
+  /* decyzja czeka na rozstrzygnięcie – po niej wracamy do oddawania skoków */
+  if(p0.pendingEventId){markWant(summer,p0);toast('Najpierw rozstrzygnij decyzję — potem oddasz skoki w konkursie.');return}
+  if(!summer&&(p0.eventTargets||[]).some(function(t){return Number(t)===Number(p0.simulationCursor)})){markWant(summer,p0);plainSim();return}
   busy=true;
   try{
     var seen=new Set(jv.resultSources(p0).map(function(r){return r&&r.id}));
     var seed=(Math.random()*4294967295)>>>0;
-    /* przebieg wstępny (w pamięci): pole startowe, kolejność, skoki rywali */
     var kids=new Set(Array.prototype.slice.call(document.body.children));
     var rawA=await runSim(sim,seed,[],true,'');
     var pA=rawA&&JSON.parse(rawA),resA=pA&&newResults(pA,seen)[0];
-    var planA=resA&&jv.racePlan(resA,pA,summer);
     var course=resA&&courseOf(resA);
-    if(!planA||!tr.findHill(course)){
-      /* sprzątamy okna, które mógł pokazać przebieg w piaskownicy (np. wydarzenie fabularne) */
+    var hasQ=hasPlayerQual(resA);
+    var planA=resA&&jv.racePlan(resA,pA,summer);
+    if(!(planA||hasQ)||!tr.findHill(course)){
       Array.prototype.slice.call(document.body.children).forEach(function(n){if(!kids.has(n)&&n.id!=='pssSelfToast')n.remove()});
-      if(planA)toast('Brak modelu 3D tej skoczni — konkurs zostanie zasymulowany.');
-      else if(pA&&pA.pendingEventId)toast('Najpierw rozstrzygnij wydarzenie, potem oddaj skoki.');
+      if(pA&&pA.pendingEventId){markWant(summer,p0);toast('Najpierw rozstrzygnij wydarzenie, potem oddaj skoki.')}
+      else if(planA||hasQ)toast('Brak modelu 3D tej skoczni — konkurs zostanie zasymulowany.');
       else if(!resA&&!pA)toast('Nie udało się przygotować konkursu — zostanie zasymulowany.');
       await plainSim();return;
     }
-    var ovr=ovrFor(pA,course),hillName=fold(course[0]),J=[],committed=false;
+    var ovr=ovrFor(pA,course),hillName=fold(course[0]),J=[],committed=false,qualJump=null;
+    var resStart=resA,planStart=planA;
+    async function commit(){
+      if(committed)return;committed=true;
+      if(Q.lastMem&&Q.lastN===J.length){flush(Q.lastMem)}
+      else await runSim(sim,seed,J.slice(),false,hillName,qualJump);
+      Q.lastMem=null;
+      var pl=readP(),nat=pl&&pl.nation;
+      (qualJump?[qualJump]:[]).concat(J).forEach(function(j){if(j&&!j.fall)try{tr.recordComp(course,j.dist,j)}catch(e){}});
+    }
     var sess={
       jump:async function(CT,n){
         var stage=CT.plan.stages[n-1];
@@ -54929,7 +55383,7 @@ async function startSelf(summer){
         });
         if(!mj){jv.unmount();return}
         J[n-1]=mj;
-        var rawN=await runSim(sim,seed,J.slice(),true,hillName);
+        var rawN=await runSim(sim,seed,J.slice(),true,hillName,qualJump);
         var pN=rawN&&JSON.parse(rawN),resN=pN&&newResults(pN,seen)[0],planN=resN&&jv.racePlan(resN,pN,summer);
         if(!planN){toast('Nie udało się przeliczyć konkursu.');jv.unmount();return}
         CT.skipReplay=true;CT.res=resN;CT.plan=planN;CT.row=planN.row;window.PSS_SELF_JUMPS.last={A:resA,N:resN};
@@ -54937,20 +55391,63 @@ async function startSelf(summer){
         if(!more)await commit();
         jv.playJump(CT,n);
       },
-      closed:function(){ if(J.length&&!committed)commit() }
+      closed:function(){
+        if((J.length||qualJump)&&!committed)commit();
+        else if(!committed)hideResults();
+      }
     };
-    async function commit(){
-      if(committed)return;committed=true;
-      await runSim(sim,seed,J.slice(),false,hillName);
-      J.forEach(function(j){if(j&&!j.fall)try{tr.recordComp(course,j.dist)}catch(e){}});
+    /* ---- kwalifikacje ---- */
+    if(hasQ){
+      var rowsA=resA.qualification.rows,nQ=resA.qualification.n||50;
+      var bf=qualBeatFn(resA,course,ovr);
+      qualJump=await new Promise(function(res){
+        var ok=tr.startComp({course:course,summer:summer,ovr:ovr,host:null,
+          hud:{label:'KWALIFIKACJE',nr:startNr(pA,resA,summer,rowsA),total:rowsA.length,name:pA.name,nation:pA.nation,face:pA.face||null,toBeat:null,cut:bf?1:null,beatFn:bf},
+          onJump:function(j){res(j)},onCancel:function(){res(null)}});
+        if(!ok)res(null);
+      });
+      if(!qualJump){hideResults();toast('Przerwano — kwalifikacje nie zostały rozegrane.');return}
+      var rawQ=await runSim(sim,seed,[],true,hillName,qualJump);
+      var pQ=rawQ&&JSON.parse(rawQ),resQ=pQ&&newResults(pQ,seen)[0];
+      if(!resQ||!hasPlayerQual(resQ)){toast('Nie udało się przeliczyć kwalifikacji.');await commit();return}
+      var me=resQ.qualification.rows.filter(function(x){return x[4]})[0];
+      var qualified=!!(me&&me[11])&&!resQ.playerDnq;
+      await qualPanel({res:resQ,me:me,qualified:qualified});
+      var planQ=qualified?jv.racePlan(resQ,pQ,summer):null;
+      if(!planQ){await commit();return}
+      resStart=resQ;planStart=planQ;
     }
-    jv.startManual(resA,planA,summer,sess);
+    jv.startManual(resStart,planStart,summer,sess);
   }catch(err){
     console.error('ODDAJ SKOKI KONKURSOWE:',err);toast('Wystąpił błąd — konkurs zostanie zasymulowany.');
     try{await plainSim()}catch(e){}
   }finally{busy=false}
 }
 window.PSS_SELF_JUMPS={_arm:function(jumps,hill,seed){Q.jumps=jumps;Q.hill=hill;Q.seed=seed;Q.cnt={};Q.next=0;Q.used=0;Q.armed=true},_disarm:function(){Q.armed=false;Q.seed=null},start:startSelf,state:function(){return {armed:Q.armed,used:Q.used,next:Q.next,busy:busy}}};
+
+/* --- po rozstrzygnięciu decyzji wracamy do oddawania skoków (zamiast automatycznej symulacji) --- */
+function installWant(){
+  ['simulateModeV2','simulateSummerMode'].forEach(function(name){
+    var cur=window[name];if(typeof cur!=='function'||cur.__pssWant)return;
+    var w=function(){
+      if(WANT&&!busy&&!Q.armed){
+        var want=WANT,p=readP(),old=Date.now()-want.t>20*60*1000;
+        var ok=!old&&p&&!p.pendingEventId&&p.season===want.season&&want.summer===(name==='simulateSummerMode');
+        if(ok){WANT=null;setTimeout(function(){startSelf(want.summer)},40);return Promise.resolve()}
+        if(old||(p&&p.season!==want.season))WANT=null;
+      }
+      return cur.apply(this,arguments);
+    };
+    for(var k in cur){try{w[k]=cur[k]}catch(e){}}
+    w.__pssWant=true;try{window[name]=w}catch(e){}
+  });
+}
+(function waitW(n){
+  var a=window.simulateModeV2,b=window.simulateSummerMode;
+  if(typeof a==='function'&&typeof b==='function'||n>40){installWant();return}
+  setTimeout(function(){waitW((n||0)+1)},400);
+})(0);
+window.addEventListener('click',function(e){var t=e.target;if(t&&t.closest&&t.closest('.sim-btn[data-sim],[data-summer-sim]'))WANT=null},true);
 
 /* --- przycisk w ekranie kariery --- */
 var stl=document.createElement('style');
